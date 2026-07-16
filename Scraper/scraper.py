@@ -154,22 +154,25 @@ def scrape_area(search_param, locality, gender):
 
     return all_rows
 
+def scrape_all():
+    all_rows = []
 
-all_rows = []
+    for area_name, cfg in AREAS.items():
+        for gender in GENDERS:
+            print(f'\nScraping: {area_name} | {gender}')
+            rows = scrape_area(cfg['searchParam'], cfg['locality'], gender)
+            all_rows.extend(rows)
+            time.sleep(random.uniform(2, 4))  
 
-for area_name, cfg in AREAS.items():
-    for gender in GENDERS:
-        print(f"\nScraping {area_name} | {gender}")
-        rows = scrape_area(cfg["searchParam"], cfg["locality"], gender)
-        all_rows.extend(rows)
-        time.sleep(random.uniform(2, 4))
+    print(f'\nTotal rows collected: {len(all_rows)}')
+    return all_rows
 
-print(f"\nTotal rows collected: {len(all_rows)}")
-
-# Save CSV
-if all_rows:
-    with open("chennai_pg_data.csv", "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=all_rows[0].keys())
+def save_csv(rows, path='chennai_pg_dataset.csv'):
+    if not rows:
+        print('No rows to save.')
+        return
+    with open(path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=rows[0].keys())
         writer.writeheader()
-        writer.writerows(all_rows)
-    print("Saved to chennai_pg_data.csv")
+        writer.writerows(rows)
+    print(f'Saved {len(rows)} rows to {path}')
