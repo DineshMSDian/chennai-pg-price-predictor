@@ -176,3 +176,14 @@ def save_csv(rows, path='chennai_pg_dataset.csv'):
         writer.writeheader()
         writer.writerows(rows)
     print(f'Saved {len(rows)} rows to {path}')
+
+def save_json(rows, path='chennai_pg_dataset.json'):
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(rows, f, indent=2, ensure_ascii=False)
+    print(f'Saved {len(rows)} rows to {path}')
+
+
+if __name__ == '__main__':
+    rows = scrape_all()
+    save_csv(rows)
+    save_json(rows)
