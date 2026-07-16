@@ -32,7 +32,52 @@ params  = {
     )
 }
 
+def parse_listing(item):
+    rows = []
+    
+    amenities = item.get("amenitiesMap") or {}   # PG-level
+    rules = item.get("rulesMap") or {}
+    room_types = item.get("roomTypes") or [{}]   # fallback: at least one empty room
 
-resp = requests.get(BASE_URL, headers=HEADERS, params=params, timeout=15)
-print(resp.status_code)
-print(resp.json())
+    for rt in room_types:
+        room_amenities = rt.get("amenitiesMap") or {}
+        
+        rows.append({
+    
+            "id": item.get("id"),
+            "title": item.get("propertyTitle"),
+            "locality": item.get("nbLocality") or item.get("locality"),
+            "gender": item.get("gender"),
+            "gate_closing_time": item.get("gateClosingTime"),
+            
+         
+            "occupancy": rt.get("occupancy"),   # SINGLE / DOUBLE / TRIPLE
+            "rent": rt.get("rent"),
+            "deposit": rt.get("deposit"),
+            
+       
+            "food_included": item.get("foodIncluded"),
+            "breakfast": item.get("breakfast"),
+            "lunch": item.get("lunch"),
+            "dinner": item.get("dinner"),
+            
+      
+            "wifi": amenities.get("WIFI"),
+            "laundry": amenities.get("LAUNDRY"),
+            "power_backup": amenities.get("POWER_BACKUP"),
+            
+    
+            "nonveg_allowed": rules.get("NONVEG"),
+            "smoking_allowed": rules.get("SMOKING"),
+            
+       
+            "url": "https://www.nobroker.in" + item.get("detailUrl", ""),
+        })
+    
+    return rows
+
+
+# Test it on the first listing
+test_rows = parse_listing(listings[0])
+print(f"Got {len(test_rows)} rows from 1 listing")
+print(test_rows[0])
