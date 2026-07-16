@@ -1,30 +1,8 @@
 import requests
-from dotenv import load_dotenv
-import os
 import time, random
 import csv
 import json
-
-load_dotenv()
-
-BASE_URL = 'https://www.nobroker.in/api/v3/multi/property/PG/filter'
-USER_ID = os.getenv('USER_ID')
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    'Accept': 'application/json',
-    'Referer': 'https://www.nobroker.in',
-    'X-Origin': 'nb-search',
-    'userid': USER_ID,
-}
-
-AREAS = {
-    "perungalathur": {
-        "searchParam": "YOUR_BASE64_BLOB_HERE",
-        "locality": "Perungalathur,New Perungalathur,Vandalur",
-    },
-}
-
-GENDERS = ["MALE", "FEMALE"]
+from config import BASE_URL, HEADERS, AREAS, GENDERS, RAW_DATA_DIR
 
 def parse_listing(item):
     rows = []
@@ -150,21 +128,23 @@ def scrape_all():
     print(f'\nTotal rows collected: {len(all_rows)}')
     return all_rows
 
-def save_csv(rows, path='chennai_pg_dataset.csv'):
+def save_csv(rows, filename='chennai_pg_dataset.csv'):
     if not rows:
         print('No rows to save.')
         return
+    path = RAW_DATA_DIR / filename
     with open(path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=rows[0].keys())
         writer.writeheader()
         writer.writerows(rows)
     print(f'Saved {len(rows)} rows to {path}')
 
-def save_json(rows, path='chennai_pg_dataset.json'):
+
+def save_json(rows, filename='chennai_pg_dataset.json'):
+    path = RAW_DATA_DIR / filename
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(rows, f, indent=2, ensure_ascii=False)
     print(f'Saved {len(rows)} rows to {path}')
-
 
 if __name__ == '__main__':
     rows = scrape_all()
