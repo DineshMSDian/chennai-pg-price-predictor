@@ -54,35 +54,51 @@ def parse_listing(item):
         room_amenities = rt.get("amenitiesMap") or {}
         
         rows.append({
-    
-            "id": item.get("id"),
-            "title": item.get("propertyTitle"),
-            "locality": item.get("nbLocality") or item.get("locality"),
-            "gender": item.get("gender"),
-            "gate_closing_time": item.get("gateClosingTime"),
-            
-         
-            "occupancy": rt.get("occupancy"),   # SINGLE / DOUBLE / TRIPLE
-            "rent": rt.get("rent"),
-            "deposit": rt.get("deposit"),
-            
-       
-            "food_included": item.get("foodIncluded"),
-            "breakfast": item.get("breakfast"),
-            "lunch": item.get("lunch"),
-            "dinner": item.get("dinner"),
-            
-      
-            "wifi": amenities.get("WIFI"),
-            "laundry": amenities.get("LAUNDRY"),
-            "power_backup": amenities.get("POWER_BACKUP"),
-            
-    
-            "nonveg_allowed": rules.get("NONVEG"),
-            "smoking_allowed": rules.get("SMOKING"),
-            
-       
-            "url": "https://www.nobroker.in" + item.get("detailUrl", ""),
+            # identity
+            'id': item.get('id'),
+            'title': item.get('propertyTitle'),
+            'locality': item.get('nbLocality') or item.get('locality'),
+            'address': item.get('address'),
+            'gender': item.get('gender'),
+            'available_for': item.get('availableForDesc'),
+
+            # room
+            'occupancy': rt.get('occupancy'), 
+            'rent': rt.get('rent'),
+            'deposit': rt.get('deposit'),
+            'attached_bathroom': rt.get('attachedBathroom'),
+
+            # food
+            'food_included': item.get('foodIncluded'),
+            'breakfast': item.get('breakfast'),
+            'lunch': item.get('lunch'),
+            'dinner': item.get('dinner'),
+            'mess': amenities.get('MESS'),
+
+            # PG-level amenities
+            'wifi': amenities.get('WIFI'),
+            'laundry': amenities.get('LAUNDRY'),
+            'power_backup': amenities.get('POWER_BACKUP'),
+            'refrigerator': amenities.get('REFRIGERATOR'),
+            'common_tv': amenities.get('COMMON_TV'),
+            'room_cleaning': amenities.get('ROOM_CLEANING'),
+            'warden': amenities.get('WARDEN'),
+            'cooking_allowed': amenities.get('COOKING'),
+            'parking': item.get('parkingDesc'),
+
+            # room-level amenities
+            'room_ac': room_amenities.get('AC'),
+            'room_cupboard': room_amenities.get('CUPBOARD'),
+            'room_tv': room_amenities.get('TV'),
+            'room_geyser': room_amenities.get('GEASER'),
+            'room_bedding': room_amenities.get('BEDDING'),
+            'room_attached_bath': room_amenities.get('AB'),
+
+            # rules
+            'gate_closing_time': item.get('gateClosingTime'),
+            'smoking_allowed': rules.get('SMOKING'),
+            'guardian_required': rules.get('GUARDIAN'),
+            'nonveg_allowed': rules.get('NONVEG'),
         })
     
     return rows
