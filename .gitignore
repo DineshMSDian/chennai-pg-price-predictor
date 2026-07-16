@@ -1,0 +1,17 @@
+# Runtime
+__pycache__/
+
+# Environment 
+.env
+.venv/
+venv/
+
+# Project misc. folders
+TEMP
+
+# IDE 
+.idea/
+.vscode/
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
