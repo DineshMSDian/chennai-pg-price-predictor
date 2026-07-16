@@ -88,8 +88,11 @@ def parse_listing(item):
     return rows
 
 def scrape_area(search_param, locality, gender):
+    """Fetch all pages for one area + gender combo. Returns flat list of rows."""
+
     all_rows = []
     page_no = 1
+    total_fetched = 0
 
     while True:
         print(f"  Page {page_no} | {locality} | {gender}")
@@ -103,12 +106,19 @@ def scrape_area(search_param, locality, gender):
             "radius": 2.0,
             "searchParam": search_param,
         }
-        
-        resp = requests.get(BASE_URL, headers=HEADERS, params=params, timeout=15)
-        resp.raise_for_status()
-        data = resp.json()
-        
+        try:
+            response = requests.get(BASE_URL, headers=HEADERS, params=params, timeout=15)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            print(f' HTTP error: {e}, so skipping this page')
+            break
+        except requests.exceptions.RequestException as e:
+            print(f' Request failed: {e}, so skipping this page')
+            break
+
+        data = response.json()
         listings = data.get("data", [])
+
         if not listings:
             print("  No more listings. Done.")
             break
@@ -116,10 +126,11 @@ def scrape_area(search_param, locality, gender):
         for item in listings:
             all_rows.extend(parse_listing(item))
 
-        total = data.get("otherParams", {}).get("total_count", 0)
-        print(f"  Got {len(listings)} | Total available: {total}")
+        total_fetched += len(listings)
+        total_listings = data.get("otherParams", {}).get("total_count", 0)
+        print(f"  Got {len(listings)} | Total available: {total_listings}")
         
-        if len(all_rows) >= total:
+        if len(all_rows) >= total_listings:
             break
 
         page_no += 1
