@@ -1,6 +1,8 @@
 import requests
 from dotenv import load_dotenv
 import os
+import time, random
+
 
 load_dotenv()
 
@@ -76,7 +78,45 @@ def parse_listing(item):
     
     return rows
 
+def scrape_area(search_param, locality, gender):
+    all_rows = []
+    page_no = 1
 
+    while True:
+        print(f"  Page {page_no} | {locality} | {gender}")
+        
+        params = {
+            "city": "chennai",
+            "gender": gender,
+            "isMetro": "false",
+            "locality": locality,
+            "pageNo": page_no,
+            "radius": 2.0,
+            "searchParam": search_param,
+        }
+        
+        resp = requests.get(BASE_URL, headers=HEADERS, params=params, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        listings = data.get("data", [])
+        if not listings:
+            print("  No more listings. Done.")
+            break
+        
+        for item in listings:
+            all_rows.extend(parse_listing(item))
+
+        total = data.get("otherParams", {}).get("total_count", 0)
+        print(f"  Got {len(listings)} | Total available: {total}")
+        
+        if len(all_rows) >= total:
+            break
+
+        page_no += 1
+        time.sleep(random.uniform(2, 4)) 
+
+    return all_rows
 # Test it on the first listing
 test_rows = parse_listing(listings[0])
 print(f"Got {len(test_rows)} rows from 1 listing")
