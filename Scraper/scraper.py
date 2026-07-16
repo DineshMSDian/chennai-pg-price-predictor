@@ -2,7 +2,7 @@ import requests
 from dotenv import load_dotenv
 import os
 import time, random
-
+import csv
 
 load_dotenv()
 
@@ -33,6 +33,15 @@ params  = {
         'QgUm9hZC1UYW1iYXJhbSIsInNob3dNYXAiOmZhbHNlfV0='
     )
 }
+
+AREAS = {
+    "perungalathur": {
+        "searchParam": "YOUR_BASE64_BLOB_HERE",
+        "locality": "Perungalathur,New Perungalathur,Vandalur",
+    },
+}
+
+GENDERS = ["MALE", "FEMALE"]
 
 def parse_listing(item):
     rows = []
@@ -117,7 +126,23 @@ def scrape_area(search_param, locality, gender):
         time.sleep(random.uniform(2, 4)) 
 
     return all_rows
-# Test it on the first listing
-test_rows = parse_listing(listings[0])
-print(f"Got {len(test_rows)} rows from 1 listing")
-print(test_rows[0])
+
+
+all_rows = []
+
+for area_name, cfg in AREAS.items():
+    for gender in GENDERS:
+        print(f"\nScraping {area_name} | {gender}")
+        rows = scrape_area(cfg["searchParam"], cfg["locality"], gender)
+        all_rows.extend(rows)
+        time.sleep(random.uniform(2, 4))
+
+print(f"\nTotal rows collected: {len(all_rows)}")
+
+# Save CSV
+if all_rows:
+    with open("chennai_pg_data.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=all_rows[0].keys())
+        writer.writeheader()
+        writer.writerows(all_rows)
+    print("Saved to chennai_pg_data.csv")
