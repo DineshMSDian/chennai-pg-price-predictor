@@ -5,10 +5,17 @@ import json
 from config import BASE_URL, HEADERS, AREAS, GENDERS, RAW_DATA_DIR
 
 def parse_listing(item):
+    """
+    INPUT: One JSON Property (PG) from the API
+    OUTPUT: A list of flat dictionaries (one per room type)
+
+    EXAMPLE: if a PG has SINGLE, DOUBLE, TRIPPLE rroms -> 3 rows returned
+    """
     rows = []
     
     amenities = item.get("amenitiesMap") or {}   # PG-level
     rules = item.get("rulesMap") or {}
+    score = item.get('score') or {}
     room_types = item.get("roomTypes") or [{}]   # fallback: at least one empty room
 
     for rt in room_types:
@@ -18,11 +25,17 @@ def parse_listing(item):
             # identity
             'id': item.get('id'),
             'title': item.get('propertyTitle'),
+            'latitude': item.get('latitude'),
+            'longitude': item.get('longitude'),
             'locality': item.get('nbLocality') or item.get('locality'),
             'address': item.get('address'),
             'gender': item.get('gender'),
-            'available_for': item.get('availableForDesc'),
+            'available_for': item.get('availableForDesc'), 
 
+            # score
+            'transit_score': score.get('transit'),
+            'lifestyle_score': score.get('lifestyle'),
+            
             # room
             'occupancy': rt.get('occupancy'), 
             'rent': rt.get('rent'),
@@ -46,6 +59,7 @@ def parse_listing(item):
             'warden': amenities.get('WARDEN'),
             'cooking_allowed': amenities.get('COOKING'),
             'parking': item.get('parkingDesc'),
+            'total_bathrooms': item.get('bathroom'),
 
             # room-level amenities
             'room_ac': room_amenities.get('AC'),

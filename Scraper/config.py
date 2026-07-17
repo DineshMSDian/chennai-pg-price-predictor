@@ -122,3 +122,11 @@ AREAS = {
         'locality': 'Vadapalani,Ashok Nagar,Kodambakkam'
     },
 }
+
+
+# import base64
+# import json
+
+# decoded = base64.b64decode(SEARCH_PARAMS).decode()
+
+# print(decoded)
