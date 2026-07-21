@@ -31,7 +31,7 @@
  25  warden              object     need to change from obj to bool
  26  cooking_allowed     object     need to change from obj to bool
  27  parking             str        should we do encoding?
- 28  total_bathrooms     int64      need to change from obj to bool
+ 28  total_bathrooms     int64      okay
  29  room_ac             object     need to change from obj to bool
  30  room_cupboard       object     need to change from obj to bool
  31  room_tv             object     need to change from obj to bool
