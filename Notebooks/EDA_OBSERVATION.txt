@@ -1,0 +1,76 @@
+
+#1. Datatype, and its statues, wheather it need any dtype chnage or encoding, initial observation
+
+#   Column               Dtype      STATUS
+---  ------              -----  
+ 0   id                  str        okay
+ 1   title               str        okay
+ 2   latitude            float64    okay
+ 3   longitude           float64    okay
+ 4   locality            str        okay
+ 5   address             str        okay
+ 6   gender              str        okay
+ 7   available_for       str        okay
+ 8   transit_score       float64    okay
+ 9   lifestyle_score     float64    okay
+ 10  occupancy           str        okay
+ 11  rent                float64    okay
+ 12  deposit             float64    okay
+ 13  attached_bathroom   object     need to change from obj to bool
+ 14  food_included       bool       okay
+ 15  breakfast           bool       okay
+ 16  lunch               bool       okay
+ 17  dinner              bool       okay
+ 18  mess                object     need to change from obj to bool
+ 19  wifi                object     need to change from obj to bool
+ 20  laundry             object     need to change from obj to bool
+ 21  power_backup        object     need to change from obj to bool
+ 22  refrigerator        object     need to change from obj to bool
+ 23  common_tv           object     need to change from obj to bool
+ 24  room_cleaning       object     need to change from obj to bool
+ 25  warden              object     need to change from obj to bool
+ 26  cooking_allowed     object     need to change from obj to bool
+ 27  parking             str        should we do encoding?
+ 28  total_bathrooms     int64      need to change from obj to bool
+ 29  room_ac             object     need to change from obj to bool
+ 30  room_cupboard       object     need to change from obj to bool
+ 31  room_tv             object     need to change from obj to bool
+ 32  room_geyser         object     need to change from obj to bool
+ 33  room_bedding        object     need to change from obj to bool
+ 34  room_attached_bath  object     need to change from obj to bool
+ 35  gate_closing_time   str        int
+ 36  smoking_allowed     bool       okay
+ 37  guardian_required   bool       okay
+ 38  nonveg_allowed      bool       okay
+
+# 2. Missing values, 
+
+Missing_Values          Column
+0 missing values (rows) in -> 16 column
+24 missing values (rows) in -> 4 column
+806 missing values (rows) in -> 3 column
+900 missing values (rows) in -> 2 column
+830 missing values (rows) in -> 2 column
+829 missing values (rows) in -> 2 column
+175 missing values (rows) in -> 2 column
+165 missing values (rows) in -> 2 column
+834 missing values (rows) in -> 1 column
+833 missing values (rows) in -> 1 column
+
+# 3. Analyzing the target variable
+
+by analyzed the target var we get,
+
+min = 0, hmmm, okay
+avearge = ~7200
+max = 65000, sus, 
+    75% = 8500, so max is outlier
+
+# 4. Visualization
+
+rent distribution:
+    0 - ~200, counts 150
+    +- 10000 has more counts
+
+rent boxplot:
+    has some 0s and very few 30k+
