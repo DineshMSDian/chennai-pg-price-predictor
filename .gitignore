@@ -9,6 +9,7 @@ venv/
 # Project misc. folders
 TEMP
 Data/raw
+Data
 
 # IDE 
 .idea/
@@ -16,4 +17,3 @@ Data/raw
 
 # Notebooks checkpoints
 .ipynb_checkpoints/
-Notebooks
