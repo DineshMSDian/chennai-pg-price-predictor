@@ -54,7 +54,7 @@ def load_and_clean(path: Path = DATA_PATH) -> pd.DataFrame:
     df = pd.read_csv(path)
 
     # 1.2 Deduplication
-    df.drop_duplicates(subset=['id', 'occupancy'])
+    df = df.drop_duplicates(subset=['id', 'occupancy'])
 
     # 1.3 Drop columns
     df = df.drop(columns=DROP_COLS)
@@ -174,7 +174,7 @@ class BasicFEatureTransformer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         X = X.copy()
         X['deposit'] = np.log1p(X['deposit'])
-        X['BOOL_COLS'] = X[BOOL_COLS].astype('int8')
+        X[BOOL_COLS] = X[BOOL_COLS].astype('int8')
 
         return X
 
@@ -190,15 +190,17 @@ class LocalityMedianImputer(BaseEstimator, TransformerMixin):
     # here fit needed, because it learning (local and global median) information from the training data
     def fit(self, X, y=None):
         self.transit_medians_ = X.groupby('locality')['transit_score'].median()
-        self.lifestyle_medians_ = X.gropuby('locality')['lifestyle_score'].median()
+        self.lifestyle_medians_ = X.groupby('locality')['lifestyle_score'].median()
         self.transit_global_ = X['transit_score'].median()
-        self.lifestyle_global_ = X['lifestyle_score'].medians()
+        self.lifestyle_global_ = X['lifestyle_score'].median()
+
+        return self
 
     def transform(self, X):
-        X = X.copy
+        X = X.copy()
 
         X['transit_score'] = (
-            X['transit-score']
+            X['transit_score']
             .fillna(X['locality'].map(self.transit_medians_))
             .fillna(self.transit_global_)
         )
@@ -297,3 +299,56 @@ Step 1       Step 2       Step 3
     ])
 
     return preprocessor
+
+def preprocess(path: Path = DATA_PATH):
+
+    # full preprocessing pipeline
+
+    # 1. load and clean
+    df = load_and_clean(path)
+    print(f'Clean Shape: {df.shape}')
+
+    # split
+
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(df)
+    print(f'Train: {X_train.shape} | Val: {X_val.shape} | Test: {X_test.shape}')
+
+    # log transform target
+    y_train, y_val, y_test = target_transformation(y_train, y_val, y_test)
+
+    # determine numerical features
+    excluded_cols = (
+        OHE_COLS + ORDINAL_COLS + TARGET_ENC_COLS + BOOL_COLS
+        + ['transit_score_missing', 'lifestyle_score_missing']
+    )
+
+    numerical_cols = [
+        col for col in X_train.columns
+        if col not in excluded_cols and pd.api.types.is_numeric_dtype(X_train[col])
+    ]
+
+    # finally build preprocessor
+    preprocessor = build_preprocessor(numerical_cols)
+
+    return (
+        X_train, X_val, X_test,
+        y_train, y_val, y_test,
+        preprocessor
+    )
+
+
+if __name__ == '__main__':
+
+    (
+        X_train, X_val, X_test,
+        y_train, y_val, y_test,
+        preprocessor,
+    ) = preprocess()
+
+    X_train_processed = preprocessor.fit_transform(X_train, y_train)
+
+    X_val_processed = preprocessor.transform(X_val)
+    X_test_processed = preprocessor.transform(X_test)
+
+    print(f"Features after encoding: {X_train_processed.shape[1]}")
+    print("Preprocessing complete.")
