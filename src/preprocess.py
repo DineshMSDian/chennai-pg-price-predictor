@@ -3,6 +3,9 @@ import numpy as np
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder, TargetEncoder
 
 # Constants
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -133,6 +136,7 @@ in my notebook 3.1 is rent and deposit transformation, but here
 3.2 depsoit transformtion, cast bool dtypes and score imputation are all in one custom transformer
 """
 
+# 3.1 - 3.3 in one shot
 # 3.1 Transform rent
 def target_transformation(y_train, y_val, y_test):
     """
@@ -149,7 +153,7 @@ def target_transformation(y_train, y_val, y_test):
     )
 
 # 3.2 (Deposit Tranformation); 3.2 (Cast bool -> int8) ; 3.3 score imputation
-# Custom transformer
+# Custom transformers
 """
 Custom transformers are used to convert our notebook preprocessing steps into reusable sklearn-compatible steps that can be added to a Pipeline.
 This keeps the preprocessing consistent and ensures learned transformations use training data only.
@@ -206,3 +210,90 @@ class LocalityMedianImputer(BaseEstimator, TransformerMixin):
         )
 
         return X
+
+# 3.4 Encoding / column transformation
+def build_preprocessor(numerical_features: list[str]) -> Pipeline:
+    """
+    Assembles the full preprocessing pipeline.
+
+    Order matters:
+    1. BasicFeatureTransformer  — log deposit, bool → int8
+    2. LocalityMedianImputer    — impute scores using locality string
+    3. ColumnTransformer        — encode all columns
+                                  (locality string → float happens here
+
+          PIPELINE
+             │
+┌────────────┼────────────┐
+↓            ↓            ↓
+Step 1       Step 2       Step 3
+                        │
+                        ▼
+                ColumnTransformer
+                │      │       │
+                ↓      ↓       ↓
+                NUM    CAT    LOCALITY
+                │       │        │
+                ↓       ↓        ↓
+            pass     OHE    TargetEncoder
+
+    """
+
+    # inner pipeline (occupancy, categorical, locality)
+    """
+    This controls:
+    What happens to this particular group of columns?
+    """
+
+    occupancy_pipeline = Pipeline(steps=[
+        ('encoder', OrdinalEncoder(
+            categories = ORDINAL_CATS,
+            handle_unknown = 'use_encoded_value',
+            unknown_value = -1,
+        )),
+    ])
+
+    categorical_pipeline = Pipeline(steps=[
+        (
+            'encoder', OneHotEncoder(
+                handle_unknown='ignore',
+                sparse_output=False,
+            )
+        )
+    ])
+
+    locality_pipeline = Pipeline(steps=[
+        (
+            'encoder', TargetEncoder(
+                target_type='continuous',
+            )
+        )
+    ])
+
+    # Coulumn transformer
+    """
+    This controls:
+    Which columns go into which pipeline?
+    """
+    column_transformer = ColumnTransformer(
+        transformers=[
+            ('numerical', 'passthrough', numerical_features),
+            ('occupancy', occupancy_pipeline, ORDINAL_COLS),
+            ('categorical', categorical_pipeline, OHE_COLS),
+            ('locality', locality_pipeline, TARGET_ENC_COLS),
+        ],
+        remainder='passthrough'
+    )
+
+    # Outer pipeline
+    """
+    This controls:
+    What happens first, second, third?
+    """
+    preprocessor = Pipeline(steps=[
+        ('basic_features', BasicFEatureTransformer()),
+        ('locality_imputations', LocalityMedianImputer()),
+        ('columns', column_transformer),
+    ])
+
+    return preprocessor
