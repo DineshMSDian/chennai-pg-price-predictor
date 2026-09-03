@@ -47,6 +47,9 @@ def evaluate(name: str, model, X, y_true_log):
     }
 
 def train():
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+
     # preprocessing
     print('Preprocessing started!!')
 
@@ -103,7 +106,6 @@ def train():
     return full_pipeline, val_metrics, test_metrics
 
 def save_pipeline(pipeline):
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
     path = MODELS_DIR / 'xgb_pipeline.pkl'
     joblib.dump(pipeline, path)
