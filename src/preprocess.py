@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
 from pathlib import Path
 
 from configs import (
@@ -75,3 +76,29 @@ def load_and_clean(dataset: Path = DATA_PATH) -> pd.DataFrame:
     df['lifestyle_score_missing'] = df['lifestyle_score'].isna().astype(int)
 
     return df
+
+def split_dataset(df: pd.DataFrame):
+    X = df.drop(columns = TARGET)
+    y = df[TARGET]
+
+    # 2.2 Train/Validation/Test
+
+    # First spilt (Train = 70%, temp = 30%) here i use validation so, just used temp and then splt the temp -> val/test = 15% each
+    X_train, X_temp, y_train, y_temp = train_test_split(
+        X,
+        y,
+        test_size=0.30,
+        random_state=42,
+        stratify=X['occupancy'] 
+    )
+
+    # Second Split (temp = 30%, split it inro Validation/Train -> 15%)
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_temp,
+        y_temp,
+        test_size=0.50,
+        random_state=42,
+        stratify=X_temp['occupancy'] 
+    )
+
+    return X_train, X_val, X_test, y_train, y_val, y_test
