@@ -25,3 +25,19 @@ ORDINAL_COL = ['occupancy']
 ORDINAL_CAT = [['SINGLE', 'DOUBLE', 'THREE', 'FOUR']]
 OHE_COL = ['gender', 'parking', 'available_for']
 TARGET_ENC_COL = ['locality']
+
+# train.py
+
+MODELS_DIR = PROJECT_PATH / 'models'
+
+BEST_PARAMS = {
+    'colsample_bytree': 0.8,
+    'learning_rate': 0.1,
+    'max_depth': 4,
+    'n_estimators': 300,
+    'reg_alpha': 0,
+    'reg_lambda': 1,
+    'subsample': 0.8,
+    'random_state': 42,
+    'objective': 'reg:squarederror',
+}
