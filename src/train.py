@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import joblib
 import numpy as np
 from sklearn.metrics import mean_absolute_error, r2_score, root_mean_squared_error
@@ -51,12 +52,22 @@ def train():
 
     X_train, X_val, X_test, y_train, y_val, y_test, preprocessor = preprocess()
 
-    # fit on train
+    # fit on train, tansform on val and test
 
     X_train_processed = preprocessor.fit_transform(X_train, y_train)
     X_val_processed = preprocessor.transform(X_val)
     X_test_processed = preprocessor.transform(X_test)
 
+    # save locality reference single source of truth for predict.py
+    # latitude, longitude, deposit are NOT learned by the pipeline
+    # so predict.py needs them from somewhere real, not hardcoded
+    locality_reference = (
+        X_train.groupby("locality")[["latitude", "longitude", "deposit"]]
+        .median()
+    )
+    joblib.dump(locality_reference, MODELS_DIR / "locality_reference.pkl")
+    print(f"Locality reference saved → {MODELS_DIR / 'locality_reference.pkl'}")
+    
     # building model with best params
     print(f'Training model (XGboost)')
     model = XGBRegressor(**BEST_PARAMS)
@@ -66,6 +77,15 @@ def train():
     train_metrics = evaluate('Train', model, X_train_processed, y_train)
     val_metrics = evaluate('Validation', model, X_val_processed, y_val)
     test_metrics = evaluate('Test', model, X_test_processed, y_test)
+
+    # save test metrics used by predict.py for error range
+    metrics = {
+        "test_mae"  : test_metrics["actual_mae"],
+        "test_rmse" : test_metrics["actual_rmse"],
+        "test_r2"   : test_metrics["r2"],
+    }
+    with open(MODELS_DIR / "metrics.json", "w") as f:
+        json.dump(metrics, f, indent=2)
 
     # same logic as in the notebook check_fitting()
     gap = train_metrics["r2"] - val_metrics["r2"]

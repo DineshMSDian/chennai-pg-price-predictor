@@ -15,7 +15,7 @@ DROP_ROWS_COLS = ['rent', 'deposit', 'occupancy', 'attached_bathroom']
 BOOL_COLS = ['attached_bathroom', 'mess', 'wifi', 'laundry', 'power_backup',
         'refrigerator', 'common_tv', 'room_cleaning','room_ac', 
         'room_cupboard', 'room_tv', 'room_geyser', 'room_bedding',
-        'room_attached_bath',
+        'room_attached_bath', 'food_included', 
 ]
 
 SCORE_MIN = 0.0
@@ -41,3 +41,13 @@ BEST_PARAMS = {
     'random_state': 42,
     'objective': 'reg:squarederror',
 }
+
+# predict.py
+PIPELINE_PATH = PROJECT_PATH / "models" / "xgb_pipeline.pkl"
+
+# User picks a locality from a dropdown.
+# Latitude, longitude, scores, deposit are filled automatically
+# from training data medians — user never sees these fields.
+LOCALITY_REF_PATH = PROJECT_PATH / "models" / "locality_reference.pkl"
+
+METRICS_PATH = PROJECT_PATH / "models" / "metrics.json"
