@@ -43,13 +43,11 @@ def load_and_clean(dataset: Path = DATA_PATH) -> pd.DataFrame:
     """
 
     df = pd.read_csv(dataset)
-    print(df.shape)
+    print(f'Dataset shape before cleanup: {df.shape}')
 
     df = df.drop_duplicates(subset=DUP_SUBSET_COLS)
-    print(df.shape)
 
     df = df.drop(columns=DROP_COLS)
-    print(df.shape)
 
     df = df.dropna(subset=DROP_ROWS_COLS)
     df = df[df[TARGET] >= MIN_RENT] # ignores pgs rent lsited below 1000
@@ -71,6 +69,7 @@ def load_and_clean(dataset: Path = DATA_PATH) -> pd.DataFrame:
     df['transit_score_missing'] = df['transit_score'].isna().astype(int)
     df['lifestyle_score_missing'] = df['lifestyle_score'].isna().astype(int)
 
+    print(f'Dataset shape after cleanup: {df.shape}')
     return df
 
 # 2 split the data
@@ -228,11 +227,12 @@ def build_preprocessor(numerical_features: list[str]) -> Pipeline:
 
     column_transformer = ColumnTransformer(
         transformers=[
-            ('numerical', numerical_features, 'passthrough'),
+            ('numerical', 'passthrough', numerical_features),
             ('occupancy', occupancy_pipeline, ORDINAL_COL),
             ('ohe_col', ohe_pipeline, OHE_COL),
             ('locality', locality_pipeline, TARGET_ENC_COL)
-        ]
+        ],
+        remainder='passthrough'
     )
 
     # Outer pipeline
@@ -242,9 +242,75 @@ def build_preprocessor(numerical_features: list[str]) -> Pipeline:
     """
 
     preprocessor = Pipeline([
-        ('basic_feature', BasicFeatureTransformer),
-        ('locality_imputation', LocalityMedianImputer),
+        ('basic_feature', BasicFeatureTransformer()),
+        ('locality_imputation', LocalityMedianImputer()),
         ('column_transformer', column_transformer),
     ])
 
     return preprocessor
+
+def preprocess(dataset: Path = DATA_PATH):
+    """
+    Run the complete preprocessing workflow.
+
+    Steps:
+    - Load and clean the raw dataset.
+    - Split data into train, validation, and test sets.
+    - Log transform the target variable.
+    - Identify numerical features.
+    - Build the sklearn preprocessing pipeline.
+
+    Returns
+    tuple
+        X_train, X_val, X_test,
+        y_train, y_val, y_test,
+        preprocessor
+    """
+
+    # full preprocessing pipeline
+
+    # calling func() to load and clean the data
+    df = load_and_clean(dataset)
+    print(f'Dataset loaded')
+
+    # splitting
+    X_train, X_val, X_test, y_train, y_val, y_test = split_dataset(df)
+    print(f'\ndataset splitting completed')
+    print(f'Train: {X_train.shape} | Val: {X_val.shape} | Test: {X_test.shape}')
+
+    # target transformation into log1p
+    y_train, y_val, y_test = target_transformation(y_train, y_val, y_test)
+
+    # determine the numeriical columns for build the preprocessor
+    excluded_cols = (
+        OHE_COL + ORDINAL_COL + TARGET_ENC_COL + BOOL_COLS
+        + ['transit_score_missing', 'lifestyle_score_missing']
+    )
+
+    numerical_features = [
+        col for col in X_train.columns
+        if col not in excluded_cols and pd.api.types.is_numeric_dtype(X_train[col])
+    ]
+
+    # finally build the preprocessor
+    preprocessor = build_preprocessor(numerical_features)
+
+    return (
+        X_train, X_val, X_test,
+        y_train, y_val, y_test,
+        preprocessor
+    )
+
+if __name__ == '__main__':
+    (
+        X_train, X_val, X_test,
+        y_train, y_val, y_test,
+        preprocessor
+    ) = preprocess()
+
+    X_train_processed = preprocessor.fit_transform(X_train, y_train)
+    X_val_processed = preprocessor.transform(X_val)
+    X_test_processed = preprocessor.transform(X_test)
+
+    print(f"Features after encoding: {X_train_processed.shape[1]}")
+    print("Preprocessing complete.")
