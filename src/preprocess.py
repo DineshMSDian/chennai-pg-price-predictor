@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder, TargetEncoder
+from sklearn.compose import ColumnTransformer
 from pathlib import Path
 
 from configs import (
@@ -10,6 +12,7 @@ from configs import (
     TARGET, MIN_RENT, MAX_RENT, DEPOSIT_RENT_RATIO_CAP,
     BOOL_COLS, 
     SCORE_MIN, SCORE_MAX,
+    ORDINAL_COL, ORDINAL_CAT, OHE_COL, TARGET_ENC_COL
 )
 
 # porting my preprocessing.ipynb into reproducable preprocessing (pipeline)script
@@ -177,3 +180,71 @@ class LocalityMedianImputer(BaseEstimator, TransformerMixin):
         )
 
         return X
+
+def build_preprocessor(numerical_features: list[str]) -> Pipeline:
+
+    """
+    Assembles the full preprocessing pipeline.
+    
+        Order matters:
+        1. BasicFeatureTransformer  — log deposit, bool -> int8
+        2. LocalityMedianImputer    — impute scores using locality string
+        3. ColumnTransformer        — encode all columns
+                                      (locality string -> float happens here
+    """
+
+    # inner pipeline (occupancy, categorical, locality)
+    """
+    This controls:
+    What happens to this particular group of columns?
+    """
+
+    occupancy_pipeline = Pipeline(steps=[
+        ('encoder', OrdinalEncoder(
+            categories = ORDINAL_CAT,
+            handle_unknown = 'use_encoded_value',
+            unknown_value = -1,
+        )),
+    ])
+
+    ohe_pipeline = Pipeline(steps=[
+        ('encoder', OneHotEncoder(
+            handle_unknown='ignore',
+            sparse_output=False,
+        ))
+    ])
+
+    locality_pipeline = Pipeline(steps=[
+        ('encoder', TargetEncoder(
+            target_type='continuous',
+        ))
+    ])
+
+    # Coulumn transformer
+    """
+    This controls:
+    Which columns go into which pipeline?
+    """
+
+    column_transformer = ColumnTransformer(
+        transformers=[
+            ('numerical', numerical_features, 'passthrough'),
+            ('occupancy', occupancy_pipeline, ORDINAL_COL),
+            ('ohe_col', ohe_pipeline, OHE_COL),
+            ('locality', locality_pipeline, TARGET_ENC_COL)
+        ]
+    )
+
+    # Outer pipeline
+    """
+    This controls:
+    What happens first, second, third?
+    """
+
+    preprocessor = Pipeline([
+        ('basic_feature', BasicFeatureTransformer),
+        ('locality_imputation', LocalityMedianImputer),
+        ('column_transformer', column_transformer),
+    ])
+
+    return preprocessor

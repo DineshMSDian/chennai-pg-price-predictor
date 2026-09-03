@@ -20,3 +20,8 @@ BOOL_COLS = ['attached_bathroom', 'mess', 'wifi', 'laundry', 'power_backup',
 
 SCORE_MIN = 0.0
 SCORE_MAX = 10.0
+
+ORDINAL_COL = ['occupancy']
+ORDINAL_CAT = [['SINGLE', 'DOUBLE', 'THREE', 'FOUR']]
+OHE_COL = ['gender', 'parking', 'available_for']
+TARGET_ENC_COL = ['locality']
