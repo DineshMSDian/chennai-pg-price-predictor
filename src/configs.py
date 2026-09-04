@@ -18,6 +18,8 @@ BOOL_COLS = ['attached_bathroom', 'mess', 'wifi', 'laundry', 'power_backup',
         'room_attached_bath', 'food_included', 
 ]
 
+NUM_COLS = ['latitude', 'longitude', 'transit_score', 'lifestyle_score', 'deposit']
+
 SCORE_MIN = 0.0
 SCORE_MAX = 10.0
 
