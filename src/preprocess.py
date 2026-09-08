@@ -167,30 +167,32 @@ def preprocess(dataset: Path = DATA_PATH) -> tuple[pd.DataFrame, pd.DataFrame, p
     )
     
 if __name__ == '__main__':
-    df = load_and_clean()
-    print(df.shape)
-
     X_train, X_val, X_test, y_train_log, y_val_log, y_test_log, preprocessor = preprocess()
+
     X_train_processed = preprocessor.fit_transform(X_train, y_train_log)
     X_val_processed = preprocessor.transform(X_val)
     X_test_processed = preprocessor.transform(X_test)
 
-    print(f'X_train shape: {X_train_processed.shape}')
-    print(f'X_val shape: {X_val_processed.shape}')
-    print(f'X_test shape: {X_test_processed.shape}')
-    print(f"Features after encoding: {X_train_processed.shape[1]}")
-    print("Preprocessing complete.")
+    ct = preprocessor.named_steps['column_transformation']
 
-    # getting processed column names for input validation in predict.py
-    feature_names = preprocessor.get_feature_names_out()
-
-    print("Number of features:", len(feature_names))
-    print("Feature names:")
-    print(feature_names)
-
-    X_val_processed_df = pd.DataFrame(
-        X_val_processed,
-        columns=feature_names
+    feature_names = (
+        list(NUM_COLS)
+        + list(BOOL_COLS)
+        + list(ct.named_transformers_['ordinal_col'].get_feature_names_out(ORDINAL_COL))
+        + list(ct.named_transformers_['ohe_col'].get_feature_names_out(OHE_COL))
+        + list(ct.named_transformers_['target_enc_col'].get_feature_names_out(TARGET_ENC_COL))
     )
 
-    print(X_val_processed_df.head())
+    print(f"X_train: {X_train.shape} -> {X_train_processed.shape}")
+    print(f"X_val:   {X_val.shape} -> {X_val_processed.shape}")
+    print(f"X_test:  {X_test.shape} -> {X_test_processed.shape}")
+
+    print(f"y_train: {y_train_log.shape}")
+    print(f"y_val:   {y_val_log.shape}")
+    print(f"y_test:  {y_test_log.shape}")
+
+    print(f"\nTotal processed features: {len(feature_names)}")
+
+    print("\nFeature names:")
+    for i, name in enumerate(feature_names):
+        print(i, name)
