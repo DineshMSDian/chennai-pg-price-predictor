@@ -1,5 +1,3 @@
-from typing import Any
-
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -45,7 +43,7 @@ def load_and_clean(dataset: Path = DATA_PATH) -> pd.DataFrame:
     
     return df
 
-def split_data(df: pd.DataFrame):
+def split_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame ,pd.DataFrame, pd.DataFrame]:
 
     X = df.drop(columns=TARGET)
     y = df[TARGET]
@@ -67,7 +65,7 @@ def split_data(df: pd.DataFrame):
 
     return (X_train, X_val, X_test, y_train, y_val, y_test)
 
-def transform_target(y_train, y_val, y_test):
+def transform_target(y_train, y_val, y_test) -> tuple[pd.Series, pd.Series, pd.Series]:
 
     return(
         np.log1p(y_train),
@@ -88,7 +86,10 @@ class BasicFeatureTransformation(BaseEstimator, TransformerMixin):
         X[BOOL_COLS] = X[BOOL_COLS].astype('int8')
 
         return X
- 
+    
+    def get_feature_names_out(self, input_features=None):
+        return np.asarray(input_features, dtype=object)
+
 class LocalMedianImputation(BaseEstimator, TransformerMixin):
 
     # this class act as an sklearn compatible custom transformer for my custom imputation strategy
@@ -114,8 +115,11 @@ class LocalMedianImputation(BaseEstimator, TransformerMixin):
             .fillna(X['locality'].map(self.lifestyle_local_median_))
             .fillna(self.lifestyle_global_median_)
         )
-
+        
         return X
+
+    def get_feature_names_out(self, input_features=None):
+        return np.asarray(input_features, dtype=object)
 
 def transformer_pipeline() -> ColumnTransformer:
 
@@ -146,7 +150,7 @@ def transformer_pipeline() -> ColumnTransformer:
 
     return full_pipeline
 
-def preprocess(dataset: Path = DATA_PATH):
+def preprocess(dataset: Path = DATA_PATH) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, Pipeline]:
 
     df = load_and_clean()
     X_train, X_val, X_test, y_train, y_val, y_test = split_data(df)
@@ -176,3 +180,17 @@ if __name__ == '__main__':
     print(f'X_test shape: {X_test_processed.shape}')
     print(f"Features after encoding: {X_train_processed.shape[1]}")
     print("Preprocessing complete.")
+
+    # getting processed column names for input validation in predict.py
+    feature_names = preprocessor.get_feature_names_out()
+
+    print("Number of features:", len(feature_names))
+    print("Feature names:")
+    print(feature_names)
+
+    X_val_processed_df = pd.DataFrame(
+        X_val_processed,
+        columns=feature_names
+    )
+
+    print(X_val_processed_df.head())
