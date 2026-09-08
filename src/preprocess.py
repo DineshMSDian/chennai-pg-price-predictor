@@ -123,6 +123,14 @@ class LocalMedianImputation(BaseEstimator, TransformerMixin):
 
 def transformer_pipeline() -> ColumnTransformer:
 
+    """
+    1. performs various encodings in the datset
+    2. starts with ordinal_encoding, and creates a pipeline for it
+    3. then onehot encoding pipeline
+    4. then target encoding pipeline
+    5. then it creates a column transformer as full pipeline and it returns ti the main(): preprocess()
+    """
+
     # starting the pipeline with encodings
     ordinal_pipeline = Pipeline([
         ('encoder', OrdinalEncoder(categories=ORDINAL_CAT, handle_unknown='use_encoded_value', unknown_value=-1))
@@ -151,6 +159,16 @@ def transformer_pipeline() -> ColumnTransformer:
     return full_pipeline
 
 def preprocess(dataset: Path = DATA_PATH) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, Pipeline]:
+
+    """ main()
+    0. takes the dataset path as an arg, it defaults
+    1. load and clean the dataset using load_clean()
+    2. split the datasets
+    3. calls the transform_traget func() for target transformation
+    4. here this create a full_pipeline using custom transformers and transformer_pipeline() to create a final preprocess_pipeline
+    5. it returns the X_train, X_val, X_test, y_train, y_val, y_test, preprocessor
+    6. it get called by the train.train() from train.py 
+    """
 
     df = load_and_clean()
     X_train, X_val, X_test, y_train, y_val, y_test = split_data(df)

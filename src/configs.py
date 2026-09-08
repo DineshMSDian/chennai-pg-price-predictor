@@ -36,3 +36,9 @@ MODELS_DIR = PROJECT_PATH / 'models'
 
 NUM_REFRENCE_COL = ['latitude', 'longitude', 'transit_score', 'lifestyle_score', 'deposit']
 BINARY_REFERENCE_COL = ['attached_bathroom', 'mess', 'power_backup', 'refrigerator', 'common_tv', 'room_cleaning', 'room_cupboard', 'room_tv', 'room_geyser', 'room_bedding', 'room_attached_bath']
+
+# predict.py
+
+FINAL_PIPELINE = MODELS_DIR / 'full_pipeline.pkl'
+LOCALITY_REFERENCE = MODELS_DIR / 'locality_reference.pkl'
+FINAL_METRICS = MODELS_DIR / 'metrics.json'
