@@ -76,6 +76,11 @@ def predict(locality: str, gender: str, occupancy: str, available_for: str, food
     return predicted_rent
 
 if __name__ == '__main__':
+
+    """
+    This is not an core project script, this is only for debugging purpose
+    used in predict script, under  "if __name__ == '__mian__'"
+    """
     
     from configs import DATA_PATH
     from preprocess import load_and_clean
@@ -88,20 +93,14 @@ if __name__ == '__main__':
     for column in df.columns:
         col_dict[column] = df[column].unique()
 
-    locality = ''
-    gender = ''
-    occupancy = ''
-    available_for = ''
-    food_included = ''
-    wifi = ''
-    laundry = ''
-    room_ac = ''
-    parking = ''
+    def handle_bool_inputs(answer: str) -> bool:
+        return answer.strip().lower() == 'yes'
 
-    while True:
+    def ask():
+
         print(col_dict['locality'])
         locality = input('Select Locality: ')
-        
+
         print(f'\n{col_dict['gender']}')
         gender = input('Select Your Gender: ')
 
@@ -114,34 +113,24 @@ if __name__ == '__main__':
         print(f'\n{col_dict['parking']}')
         parking = input('Select your Parking Type: ')
 
-        print(f'\nSelect YES or NO ')
-        print()
-        food_included = input('Are you Prefering PGs including Food?: ')
-        wifi = input('Are You looking for PG with Wifi support?: ')
-        laundry = input('Are You looking for PG with laundry facilities?: ')
-        room_ac = input('Are You looking for Air Conditioned PGs?: ')
+        print(f'\nType yes or no')
+        food_included = handle_bool_inputs(input('Are you Prefering PGs including Food?: '))
+        wifi = handle_bool_inputs(input('Are You looking for PG with Wifi support?: '))
+        laundry = handle_bool_inputs(input('Are You looking for PG with laundry facilities?: '))
+        room_ac = handle_bool_inputs(input('Are You looking for Air Conditioned PGs?: '))
 
-        if food_included == 'YES':
-            food_included = True
-        else:
-            food_included = False
+        return (
+            locality.strip().title(),
+            gender.strip().upper(),
+            occupancy.strip().upper(),
+            available_for.strip().title(),
+            food_included,
+            wifi,
+            laundry,
+            room_ac,
+            parking.strip().title(), # crash for Bike and Car
+        )
 
-        if wifi == 'YES':
-            wifi = True
-        else:
-            wifi = False
-
-        if laundry == 'YES':
-            laundry =True
-        else:
-            laundry = False
-
-        if room_ac == 'YES':
-            room_ac = True
-        else:
-            room_ac = False
-
-        break
-
-    rent = predict(locality, gender, occupancy, available_for, food_included, wifi, laundry, room_ac, parking)
+    locality, gender, occupancy, available_for, food_included, wifi, laundry, room_ac, parking = ask()
+    predict(locality, gender, occupancy, available_for, food_included, wifi, laundry, room_ac, parking)
         
