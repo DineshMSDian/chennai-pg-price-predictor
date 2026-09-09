@@ -1,35 +1,14 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-import joblib
+from dotenv import load_dotenv, find_dotenv
+import os
 
-# initialize the API
+from pydantic import BaseModel
+from fastapi import FastAPI
+
+load_dotenv(find_dotenv())
+
 app = FastAPI()
 
-# Input validation using pydantic
-class InputFeatures(BaseModel):
-
-    # user inputs
-    locality: str
-    occupancy: str
-    gender: str
-    available_for: str
-    parking: str
-    food_included: bool
-    wifi: bool
-    room_ac: bool
-    laundry: bool
-
-    # optional user inputs (have defaults)
-    attached_bathroom: bool
-    mess: bool
-    power_backup: bool
-    refrigerator: bool
-    common_tv: bool
-    room_cleaning: bool
-    room_cupboard: bool
-    room_tv: bool
-    room_geyser: bool
-    room_bedding: bool
-    room_attached_bath: bool
-
-    # defaults
+# my kind of healt check :)
+@app.get('/secret')
+def easter_eggs():
+    return f'I have a secret message for you, -> {os.getenv('SECRET_MSG')}'

@@ -90,7 +90,7 @@ def run_tuning(X_train, X_val, y_train, y_val, n_trials = 50):
         assert best_score is not None # fixes mlflow exception that best-score as None, optuna defauls it float | None
 
         mlflow.log_params(best_params)
-        mlflow.log_metric('best_mae', round(best_score), 4)
+        mlflow.log_metric('best_mae', round(best_score, 4))
 
         print(f'\nBest Trial is: {study.best_trial}')
         print(f"\nBest MAE: {best_score:.4f}")
