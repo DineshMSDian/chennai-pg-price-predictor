@@ -46,7 +46,7 @@ def predict(locality: str, gender: str, occupancy: str, available_for: str, food
 
         # model derived inputs
         'latitude': input_loc_ref['latitude'],
-        'longitude': input_loc_ref['longtitude'],
+        'longitude': input_loc_ref['longitude'],
         'transit_score': np.nan,
         'lifestyle_score': np.nan,
         'deposit': input_loc_ref['deposit'],
@@ -64,13 +64,84 @@ def predict(locality: str, gender: str, occupancy: str, available_for: str, food
     }
 
     input_df = pd.DataFrame([input_dict])
-    log_pred = _pipeline.predict(input_dict)
+    log_pred = _pipeline.predict(input_df)
     predicted_rent = float(np.expm1(log_pred[0]))
 
     lower = predicted_rent - _metrics['test_mae']
     upper = predicted_rent + _metrics['test_mae']
 
-    print(f'Expected Rent is: {predicted_rent}')
-    print(f'Actual Rent Around: {lower} - {upper}')
+    print(f'Expected Rent For: {occupancy} sharing Hostel/PGs in {locality} is: {round(predicted_rent)}')
+    print(f'Actual Rent in {locality} for {occupancy} sharing rooms typically ranges from {round(lower)} to {round(upper)}')
 
-    return predicted_rent    
+    return predicted_rent
+
+if __name__ == '__main__':
+    
+    from configs import DATA_PATH
+    from preprocess import load_and_clean
+    df = load_and_clean(DATA_PATH)
+    print(df.shape)
+    df = df[['locality', 'gender', 'occupancy', 'available_for', 'food_included', 'wifi', 'laundry', 'room_ac', 'parking']]
+    print(df.shape)
+
+    col_dict = {}
+    for column in df.columns:
+        col_dict[column] = df[column].unique()
+
+    locality = ''
+    gender = ''
+    occupancy = ''
+    available_for = ''
+    food_included = ''
+    wifi = ''
+    laundry = ''
+    room_ac = ''
+    parking = ''
+
+    while True:
+        print(col_dict['locality'])
+        locality = input('Select Locality: ')
+        
+        print(f'\n{col_dict['gender']}')
+        gender = input('Select Your Gender: ')
+
+        print(f'\n{col_dict['occupancy']}')
+        occupancy = input('Select your room sharing type: ')
+
+        print(f'\n{col_dict['available_for']}') 
+        available_for = input('Choose Your Designation: ')
+
+        print(f'\n{col_dict['parking']}')
+        parking = input('Select your Parking Type: ')
+
+        print(f'\nSelect YES or NO ')
+        print()
+        food_included = input('Are you Prefering PGs including Food?: ')
+        wifi = input('Are You looking for PG with Wifi support?: ')
+        laundry = input('Are You looking for PG with laundry facilities?: ')
+        room_ac = input('Are You looking for Air Conditioned PGs?: ')
+
+        if food_included == 'YES':
+            food_included = True
+        else:
+            food_included = False
+
+        if wifi == 'YES':
+            wifi = True
+        else:
+            wifi = False
+
+        if laundry == 'YES':
+            laundry =True
+        else:
+            laundry = False
+
+        if room_ac == 'YES':
+            room_ac = True
+        else:
+            room_ac = False
+
+        break
+
+    rent = predict(locality, gender, occupancy, available_for, food_included, wifi, laundry, room_ac, parking)
+        
