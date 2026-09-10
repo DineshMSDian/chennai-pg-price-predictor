@@ -7,7 +7,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
 from pathlib import Path
-from configs import (
+from src.configs import (
     DATA_PATH,
     DUP_SUBSET_COLS, DROP_COLS, DROP_ROWS_COLS,
     TARGET, MIN_RENT, MAX_RENT, DEPOSIT_RENT_RATIO_CAP,

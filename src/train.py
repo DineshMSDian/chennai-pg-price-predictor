@@ -5,10 +5,10 @@ import json
 from xgboost import XGBRegressor
 
 from sklearn.pipeline import Pipeline
-from preprocess import preprocess
-from optuna_tune import run_tuning, evaluate
+from src.preprocess import preprocess
+from src.optuna_tune import run_tuning, evaluate
 
-from configs import (
+from src.configs import (
     MODELS_DIR,
     NUM_REFRENCE_COL, BINARY_REFERENCE_COL
 )

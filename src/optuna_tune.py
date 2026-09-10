@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
 from xgboost import XGBRegressor
-from preprocess import preprocess
+from src.preprocess import preprocess
 
 mlflow.set_tracking_uri('http://localhost:5000')
 mlflow.set_experiment('XGB-optuna-trials')

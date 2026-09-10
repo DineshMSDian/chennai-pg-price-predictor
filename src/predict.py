@@ -5,7 +5,7 @@ import numpy as np
 
 from sklearn.pipeline import Pipeline
 
-from configs import (
+from src.configs import (
     FINAL_PIPELINE, LOCALITY_REFERENCE, FINAL_METRICS
 )
 
