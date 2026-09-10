@@ -1,58 +1,31 @@
 import pandas as pd
 import numpy as np
-from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder, TargetEncoder
 from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+
 from pathlib import Path
-
-from configs import (
-    DATA_PATH, DUP_SUBSET_COLS, DROP_COLS, DROP_ROWS_COLS,
+from src.configs import (
+    DATA_PATH,
+    DUP_SUBSET_COLS, DROP_COLS, DROP_ROWS_COLS,
     TARGET, MIN_RENT, MAX_RENT, DEPOSIT_RENT_RATIO_CAP,
-    BOOL_COLS, 
+    BOOL_COLS, NUM_COLS,
     SCORE_MIN, SCORE_MAX,
-    ORDINAL_COL, ORDINAL_CAT, OHE_COL, TARGET_ENC_COL
+    ORDINAL_COL, OHE_COL, TARGET_ENC_COL, 
+    ORDINAL_CAT,
 )
-
-# porting my preprocessing.ipynb into reproducable preprocessing (pipeline)script
-
-# 1 Data loading and basic cleanups
 def load_and_clean(dataset: Path = DATA_PATH) -> pd.DataFrame:
 
-    """
-    Load the raw dataset and perform initial data cleaning.
-
-    Cleaning steps:
-    1. Load the dataset.
-    2. Remove duplicate listings.
-    3. Drop unnecessary columns.
-    4. Remove rows with missing required values.
-    5. Filter invalid target values and extreme deposit-to-rent ratios.
-    6. Normalize boolean and categorical values.
-    7. Replace invalid score values with NaN.
-    8. Create missing-value indicator features for score columns.
-
-    Parameters
-    dataset : Path, default=DATA_PATH
-        Path to the raw CSV dataset.
-
-    Returns
-    pd.DataFrame
-        Cleaned dataframe ready for preprocessing.
-    """
-
-    df = pd.read_csv(dataset)
-    print(f'Dataset shape before cleanup: {df.shape}')
-
+    df = pd.read_csv(DATA_PATH)
     df = df.drop_duplicates(subset=DUP_SUBSET_COLS)
-
     df = df.drop(columns=DROP_COLS)
-
     df = df.dropna(subset=DROP_ROWS_COLS)
-    df = df[df[TARGET] >= MIN_RENT] # ignores pgs rent lsited below 1000
-    df = df[df[TARGET] <= MAX_RENT] # ignores pgs rent lsited above 1500
-    df = df[df['deposit'] / df[TARGET] <= DEPOSIT_RENT_RATIO_CAP] # handles outlier
+
+    df = df[df[TARGET] >= MIN_RENT] 
+    df = df[df[TARGET] <= MAX_RENT] 
+    df = df[df['deposit'] / df[TARGET] <= DEPOSIT_RENT_RATIO_CAP]
 
     df[BOOL_COLS] = df[BOOL_COLS].fillna(False).astype(bool)
     df['parking'] = df['parking'].fillna('No Parking')
@@ -61,256 +34,183 @@ def load_and_clean(dataset: Path = DATA_PATH) -> pd.DataFrame:
     df['transit_score'] = df['transit_score'].where(
         df['transit_score'].between(SCORE_MIN, SCORE_MAX), other=np.nan
     )
-
     df['lifestyle_score'] = df['lifestyle_score'].where(
         df['lifestyle_score'].between(SCORE_MIN, SCORE_MAX), other=np.nan
     )
 
-    df['transit_score_missing'] = df['transit_score'].isna().astype(int)
-    df['lifestyle_score_missing'] = df['lifestyle_score'].isna().astype(int)
-
-    print(f'Dataset shape after cleanup: {df.shape}')
+    # df['transit_score_missing'] = df['transit_score'].isna().astype(int)
+    # df['lifestyle_score_missing'] = df['lifestyle_score'].isna().astype(int)
+    
     return df
 
-# 2 split the data
-def split_dataset(df: pd.DataFrame):
-    """
-    1. seperate target and features
-    2. Train/Validation/Test
-        2.1 First spilt (Train = 70%, temp = 30%) here i use validation so, just used temp and then splt the temp -> val/test = 15% each
-        2.2 Second Split (temp = 30%, split it inro Validation/Train -> 15%)
-    """
+def split_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame ,pd.DataFrame, pd.DataFrame]:
 
-    X = df.drop(columns = TARGET)
+    X = df.drop(columns=TARGET)
     y = df[TARGET]
- 
+
     X_train, X_temp, y_train, y_temp = train_test_split(
         X,
         y,
         test_size=0.30,
         random_state=42,
-        stratify=X['occupancy'] 
+        stratify=X['occupancy']
     )
-
     X_val, X_test, y_val, y_test = train_test_split(
         X_temp,
         y_temp,
         test_size=0.50,
         random_state=42,
-        stratify=X_temp['occupancy'] 
+        stratify=X_temp['occupancy']
     )
 
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    return (X_train, X_val, X_test, y_train, y_val, y_test)
 
-# 3 imputations
-def target_transformation(y_train, y_val, y_test):
+def transform_target(y_train, y_val, y_test) -> tuple[pd.Series, pd.Series, pd.Series]:
 
-    """
-    returns the log1p transfromed target
-    """
-    
-    return (
-        np.log1p(y_train), np.log1p(y_val), np.log1p(y_test)
+    return(
+        np.log1p(y_train),
+        np.log1p(y_val),
+        np.log1p(y_test)
     )
 
-# 3.1.2 custom imputations, custom transformers
-"""
-Custom transformers are used because the project contains custom preprocessing
-logic that is not directly available in standard sklearn transformers:
+class BasicFeatureTransformation(BaseEstimator, TransformerMixin):
 
-- Log transform deposit using np.log1p().
-- Convert boolean columns to int8.
-- Impute score features using locality wise medians with a global median fallback.
-
-These custom transformations are wrapped as sklearn compatible transformers so
-they can be integrated into the Pipeline and applied consistently without data leakage.
-"""
-
-class BasicFeatureTransformer(BaseEstimator, TransformerMixin):
-
-    """
-    This transformer contains transformations that don't need to learn anything from the training data.
-    Because there's nothing to learn. It only performs 
-    - log1p deposit
-    - bool columns -> int8
-    so fit only returns self
-    """
-
+    # this class act as an sklearn compatible custom transformer for my custom imputation strategy
     def fit(self, X, y=None):
         return self
 
-    def transform(self, X):
+    def transform(self, X, y=None):
         X = X.copy()
+
         X['deposit'] = np.log1p(X['deposit'])
         X[BOOL_COLS] = X[BOOL_COLS].astype('int8')
 
         return X
+    
+    def get_feature_names_out(self, input_features=None):
+        return np.asarray(input_features, dtype=object)
 
-class LocalityMedianImputer(BaseEstimator, TransformerMixin):
-    """
-    Impute transit_score and lifestyle_score using
-    locality medians learned from training data only.
-    Falls back to global train median if locality has no median.
+class LocalMedianImputation(BaseEstimator, TransformerMixin):
 
-    Must run BEFORE locality gets encoded to a number.
-    """
-
+    # this class act as an sklearn compatible custom transformer for my custom imputation strategy
     def fit(self, X, y=None):
-        self.transit_medians_ = X.groupby('locality')['transit_score'].median()
-        self.lifestyle_medians_ = X.groupby('locality')['lifestyle_score'].median()
-        self.transit_global_ = X['transit_score'].median()
-        self.lifestyle_global_ = X['lifestyle_score'].median()
+        self.transit_local_median_ = X.groupby('locality')['transit_score'].median()
+        self.lifestyle_local_median_ = X.groupby('locality')['lifestyle_score'].median()
+        self.transit_global_median_ = X['transit_score'].median()
+        self.lifestyle_global_median_ = X['lifestyle_score'].median()
 
         return self
 
-    def transform(self, X):
+    def transform(self, X, y=None):
         X = X.copy()
 
         X['transit_score'] = (
             X['transit_score']
-            .fillna(X['locality'].map(self.transit_medians_))
-            .fillna(self.transit_global_)
+            .fillna(X['locality'].map(self.transit_local_median_))
+            .fillna(self.transit_global_median_)
         )
 
         X['lifestyle_score'] = (
             X['lifestyle_score']
-            .fillna(X['locality'].map(self.lifestyle_medians_))
-            .fillna(self.lifestyle_global_)
+            .fillna(X['locality'].map(self.lifestyle_local_median_))
+            .fillna(self.lifestyle_global_median_)
         )
-
+        
         return X
 
-def build_preprocessor(numerical_features: list[str]) -> Pipeline:
+    def get_feature_names_out(self, input_features=None):
+        return np.asarray(input_features, dtype=object)
+
+def transformer_pipeline() -> ColumnTransformer:
 
     """
-    Assembles the full preprocessing pipeline.
-    
-        Order matters:
-        1. BasicFeatureTransformer  — log deposit, bool -> int8
-        2. LocalityMedianImputer    — impute scores using locality string
-        3. ColumnTransformer        — encode all columns
-                                      (locality string -> float happens here
+    1. performs various encodings in the datset
+    2. starts with ordinal_encoding, and creates a pipeline for it
+    3. then onehot encoding pipeline
+    4. then target encoding pipeline
+    5. then it creates a column transformer as full pipeline and it returns ti the main(): preprocess()
     """
 
-    # inner pipeline (occupancy, categorical, locality)
-    """
-    This controls:
-    What happens to this particular group of columns?
-    """
-
-    occupancy_pipeline = Pipeline(steps=[
-        ('encoder', OrdinalEncoder(
-            categories = ORDINAL_CAT,
-            handle_unknown = 'use_encoded_value',
-            unknown_value = -1,
-        )),
+    # starting the pipeline with encodings
+    ordinal_pipeline = Pipeline([
+        ('encoder', OrdinalEncoder(categories=ORDINAL_CAT, handle_unknown='use_encoded_value', unknown_value=-1))
     ])
 
-    ohe_pipeline = Pipeline(steps=[
-        ('encoder', OneHotEncoder(
-            handle_unknown='ignore',
-            sparse_output=False,
-        ))
+    ohe_pipeline = Pipeline([
+        ('encoder', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
     ])
 
-    locality_pipeline = Pipeline(steps=[
-        ('encoder', TargetEncoder(
-            target_type='continuous',
-        ))
+    target_enc_pipeline = Pipeline([
+        ('encoder', TargetEncoder(target_type='continuous'))
     ])
 
-    # Coulumn transformer
-    """
-    This controls:
-    Which columns go into which pipeline?
-    """
-
-    column_transformer = ColumnTransformer(
-        transformers=[
-            ('numerical', 'passthrough', numerical_features),
-            ('occupancy', occupancy_pipeline, ORDINAL_COL),
-            ('ohe_col', ohe_pipeline, OHE_COL),
-            ('locality', locality_pipeline, TARGET_ENC_COL)
-        ],
-        remainder='passthrough'
+    # defining columns for their transformation
+    full_pipeline = ColumnTransformer([
+        ('numerical', 'passthrough', NUM_COLS),
+        ('bool', 'passthrough', BOOL_COLS),
+        ('ordinal_col', ordinal_pipeline, ORDINAL_COL),
+        ('ohe_col', ohe_pipeline, OHE_COL),
+        ('target_enc_col', target_enc_pipeline, TARGET_ENC_COL)
+    ],
+        remainder='drop',
+        n_jobs=-1,
     )
 
-    # Outer pipeline
+    return full_pipeline
+
+def preprocess(dataset: Path = DATA_PATH) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, Pipeline]:
+
+    """ main()
+    0. takes the dataset path as an arg, it defaults
+    1. load and clean the dataset using load_clean()
+    2. split the datasets
+    3. calls the transform_traget func() for target transformation
+    4. here this create a full_pipeline using custom transformers and transformer_pipeline() to create a final preprocess_pipeline
+    5. it returns the X_train, X_val, X_test, y_train, y_val, y_test, preprocessor
+    6. it get called by the train.train() from train.py 
     """
-    This controls:
-    What happens first, second, third?
-    """
+
+    df = load_and_clean()
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(df)
+    y_train_log, y_val_log, y_test_log = transform_target(y_train, y_val, y_test)
 
     preprocessor = Pipeline([
-        ('basic_feature', BasicFeatureTransformer()),
-        ('locality_imputation', LocalityMedianImputer()),
-        ('column_transformer', column_transformer),
+        ('basic_imputation', BasicFeatureTransformation()),
+        ('score_imputation', LocalMedianImputation()),
+        ('column_transformation', transformer_pipeline()),
     ])
 
-    return preprocessor
-
-def preprocess(dataset: Path = DATA_PATH):
-    """
-    Run the complete preprocessing workflow.
-
-    Steps:
-    - Load and clean the raw dataset.
-    - Split data into train, validation, and test sets.
-    - Log transform the target variable.
-    - Identify numerical features.
-    - Build the sklearn preprocessing pipeline.
-
-    Returns
-    tuple
-        X_train, X_val, X_test,
-        y_train, y_val, y_test,
-        preprocessor
-    """
-
-    # full preprocessing pipeline
-
-    # calling func() to load and clean the data
-    df = load_and_clean(dataset)
-    print(f'Dataset loaded')
-
-    # splitting
-    X_train, X_val, X_test, y_train, y_val, y_test = split_dataset(df)
-    print(f'\ndataset splitting completed')
-    print(f'Train: {X_train.shape} | Val: {X_val.shape} | Test: {X_test.shape}')
-
-    # target transformation into log1p
-    y_train, y_val, y_test = target_transformation(y_train, y_val, y_test)
-
-    # determine the numeriical columns for build the preprocessor
-    excluded_cols = (
-        OHE_COL + ORDINAL_COL + TARGET_ENC_COL + BOOL_COLS
-        + ['transit_score_missing', 'lifestyle_score_missing']
-    )
-
-    numerical_features = [
-        col for col in X_train.columns
-        if col not in excluded_cols and pd.api.types.is_numeric_dtype(X_train[col])
-    ]
-
-    # finally build the preprocessor
-    preprocessor = build_preprocessor(numerical_features)
-
     return (
-        X_train, X_val, X_test,
-        y_train, y_val, y_test,
-        preprocessor
+        X_train, X_val, X_test, y_train_log, y_val_log, y_test_log, preprocessor
     )
-
+    
 if __name__ == '__main__':
-    (
-        X_train, X_val, X_test,
-        y_train, y_val, y_test,
-        preprocessor
-    ) = preprocess()
+    X_train, X_val, X_test, y_train_log, y_val_log, y_test_log, preprocessor = preprocess()
 
-    X_train_processed = preprocessor.fit_transform(X_train, y_train)
+    X_train_processed = preprocessor.fit_transform(X_train, y_train_log)
     X_val_processed = preprocessor.transform(X_val)
     X_test_processed = preprocessor.transform(X_test)
 
-    print(f"Features after encoding: {X_train_processed.shape[1]}")
-    print("Preprocessing complete.")
+    ct = preprocessor.named_steps['column_transformation']
+
+    feature_names = (
+        list(NUM_COLS)
+        + list(BOOL_COLS)
+        + list(ct.named_transformers_['ordinal_col'].get_feature_names_out(ORDINAL_COL))
+        + list(ct.named_transformers_['ohe_col'].get_feature_names_out(OHE_COL))
+        + list(ct.named_transformers_['target_enc_col'].get_feature_names_out(TARGET_ENC_COL))
+    )
+
+    print(f"X_train: {X_train.shape} -> {X_train_processed.shape}")
+    print(f"X_val:   {X_val.shape} -> {X_val_processed.shape}")
+    print(f"X_test:  {X_test.shape} -> {X_test_processed.shape}")
+
+    print(f"y_train: {y_train_log.shape}")
+    print(f"y_val:   {y_val_log.shape}")
+    print(f"y_test:  {y_test_log.shape}")
+
+    print(f"\nTotal processed features: {len(feature_names)}")
+
+    print("\nFeature names:")
+    for i, name in enumerate(feature_names):
+        print(i, name)

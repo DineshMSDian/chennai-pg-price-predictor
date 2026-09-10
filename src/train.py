@@ -1,120 +1,104 @@
-from pathlib import Path
-import json
+import pandas as pd
 import joblib
-import numpy as np
-from sklearn.metrics import mean_absolute_error, r2_score, root_mean_squared_error
-from sklearn.pipeline import Pipeline
+import json
+
 from xgboost import XGBRegressor
 
-from preprocess import preprocess
-from configs import(
-    DATA_PATH, MODELS_DIR, 
-    BEST_PARAMS,
+from sklearn.pipeline import Pipeline
+from src.preprocess import preprocess
+from src.optuna_tune import run_tuning, evaluate
+
+from src.configs import (
+    MODELS_DIR,
+    NUM_REFRENCE_COL, BINARY_REFERENCE_COL
 )
 
-def evaluate(name: str, model, X, y_true_log):
+def run_optuna(X_train, X_val, y_train, y_val, preprocessor):
+
     """
-    evaluate model performance on a split, metrics reported in both log and actual rupee
+    1. this func() will called by train()
+    2. and getting the X_train, X_val, y_train, y_val and preprocessor
+    3. using preprocessor it preprocess the train and val datas, used for optuna_tuning.run_tune()
+    4. then it calls the run_tune from optuna_tune.py and send the processed train and val datasets
+    5. then it will return the best_params to train()
     """
-
-    y_pred_log = model.predict(X)
-
-    # log metrics
-    log_r2 = r2_score(y_true_log, y_pred_log)
-    log_mae = mean_absolute_error(y_true_log, y_pred_log)
-    log_rmse = root_mean_squared_error(y_true_log, y_pred_log)
-
-    # actual metrics
-    y_pred_actual = np.expm1(y_pred_log)
-    y_true_actual = np.expm1(y_true_log)
-
-    actual_mae  = mean_absolute_error(y_true_actual, y_pred_actual)
-    actual_rmse = root_mean_squared_error(y_true_actual, y_pred_actual)
-
-    print(f"\n{name} Results")
-    print(f"  R²        {log_r2:.4f}")
-    print(f"  Log MAE   {log_mae:.4f}")
-    print(f"  Log RMSE  {log_rmse:.4f}")
-    print(f"  MAE       ₹{actual_mae:,.2f}")
-    print(f"  RMSE      ₹{actual_rmse:,.2f}")
-
-    return {
-        "r2"          : log_r2,
-        "log_mae"     : log_mae,
-        "log_rmse"    : log_rmse,
-        "actual_mae"  : actual_mae,
-        "actual_rmse" : actual_rmse,
-    }
-
-def train():
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
-
-
-    # preprocessing
-    print('Preprocessing started!!')
-
-    X_train, X_val, X_test, y_train, y_val, y_test, preprocessor = preprocess()
-
-    # fit on train, tansform on val and test
 
     X_train_processed = preprocessor.fit_transform(X_train, y_train)
     X_val_processed = preprocessor.transform(X_val)
-    X_test_processed = preprocessor.transform(X_test)
 
-    # save locality reference single source of truth for predict.py
-    # latitude, longitude, deposit are NOT learned by the pipeline
-    # so predict.py needs them from somewhere real, not hardcoded
-    locality_reference = (
-        X_train.groupby("locality")[["latitude", "longitude", "deposit"]]
-        .median()
-    )
-    joblib.dump(locality_reference, MODELS_DIR / "locality_reference.pkl")
-    print(f"Locality reference saved → {MODELS_DIR / 'locality_reference.pkl'}")
-    
-    # building model with best params
-    print(f'Training model (XGboost)')
-    model = XGBRegressor(**BEST_PARAMS)
-    model.fit(X_train_processed, y_train)
+    best_params = run_tuning(X_train_processed, X_val_processed, y_train, y_val, 100)
 
-    # evaluate on train/val/test
-    train_metrics = evaluate('Train', model, X_train_processed, y_train)
-    val_metrics = evaluate('Validation', model, X_val_processed, y_val)
-    test_metrics = evaluate('Test', model, X_test_processed, y_test)
+    return best_params
 
-    # save test metrics used by predict.py for error range
-    metrics = {
-        "test_mae"  : test_metrics["actual_mae"],
-        "test_rmse" : test_metrics["actual_rmse"],
-        "test_r2"   : test_metrics["r2"],
-    }
-    with open(MODELS_DIR / "metrics.json", "w") as f:
-        json.dump(metrics, f, indent=2)
+def save_artifacts(model, preprocessor, metrics, X_train: pd.DataFrame):
 
-    # same logic as in the notebook check_fitting()
-    gap = train_metrics["r2"] - val_metrics["r2"]
-    print(f"\nTrain/Val gap  {gap:.4f}")
-    if gap > 0.15:
-        print("  WARNING: possible overfitting")
-    else:
-        print("  OK: gap within acceptable range")
+    """
+    1. save model + preprocess as an sinlge pkl file
+    2. save metrics
+    3. saving locality references for inputs
+    """
 
     full_pipeline = Pipeline([
         ('preprocessor', preprocessor),
-        ('model', model)
+        ('final_modle', model)
     ])
+    joblib.dump(full_pipeline, MODELS_DIR / 'full_pipeline.pkl')
+    print(f'Final Pipeline saved!')
 
-    return full_pipeline, val_metrics, test_metrics
+    final_metrics = {
+        'test_mae': metrics['actual_mae'],
+        'test_rmse': metrics['actual_rmse'],
+        'test_r2': metrics['actual_r2'],
+    }
 
-def save_pipeline(pipeline):
+    with open(MODELS_DIR / 'metrics.json', 'w') as f:
+        json.dump(final_metrics, f, indent=2)
+    print(f'Final Test Metrics saved!')
 
-    path = MODELS_DIR / 'xgb_pipeline.pkl'
-    joblib.dump(pipeline, path)
-    print(f'\nPipeline Saved to {path}')
+    locality_reference_num_features = X_train.groupby('locality')[NUM_REFRENCE_COL].median()
+    locality_reference_binary_features = X_train.groupby('locality')[BINARY_REFERENCE_COL].agg(lambda X: X.mode().iloc[0])
+
+    locality_reference = pd.concat([locality_reference_num_features, locality_reference_binary_features], axis=1)
+
+    joblib.dump(locality_reference, MODELS_DIR / 'locality_reference.pkl')
+    print(f'Locality reference!')
+
+def train():
+
+    """ main() function
+    1. initializeing preprocessing
+    2. here i send the old train/val sets to run_optuna(), that calls the run_tuning from optuna_tune.py and returns the best_params
+    3. and after getting best_params, i combine my old train/val into new train_val (combined) to retrain the model with the new test_val datast with best_pramas that optuna returns, 
+        so for hyper-parameter-tuning 70% train, 15& val, for retraing the model with new train dataset with best_params, i combined the old test and val inro single test_val 85% for traing and testing with already existing test 15% dataset
+    4. retrain the model with combined dataset
+    5. Make prediction and evaluate the performance of the newly trained model with best_params tested on untouched test_set
+    6. calls the save_artifact() and sends the final_model, preprocessor, final_metrics and newly created X_train_val train set for extracting locality reference from on it
+    """
+
+    X_train, X_val, X_test, y_train, y_val, y_test, preprocessor = preprocess()
+    final_params = run_optuna(X_train, X_val, y_train, y_val, preprocessor)
+
+    X_train_val = pd.concat([X_train, X_val], axis=0, ignore_index=True)
+    y_train_val = pd.concat([y_train, y_val], axis=0, ignore_index=True)
+
+    X_train_val_processed = preprocessor.fit_transform(X_train_val, y_train_val)
+    X_test_processed = preprocessor.transform(X_test)
+
+    final_model = XGBRegressor(random_state=42, n_jobs=-1, **final_params)
+    final_model.fit(X_train_val_processed, y_train_val)
+
+    prediction = final_model.predict(X_test_processed)
+    final_metrics = evaluate(y_test, prediction)
+
+    print(f'final test results...')
+    print(f'\ntest MAE: {final_metrics['actual_mae']}')
+    print(f'test RMSE: {final_metrics['actual_rmse']}')
+    print(f'test r2 Score: {final_metrics['actual_r2']}')
+
+    save_artifacts(final_model, preprocessor, final_metrics, X_train_val)
+
+    return f'Training process Completed and the results are presented! :)'
+
 
 if __name__ == '__main__':
-    pipeline, val_metrics, test_metrics  = train()
-    save_pipeline(pipeline)
-
-    print('\nFinal val  R2_score  ', round(val_metrics['r2'], 4))
-    print('Final test R2_score  ', round(test_metrics['r2'], 4))
-    print('\nDone.')
+    train()
