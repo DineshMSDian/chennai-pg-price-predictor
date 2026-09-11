@@ -61,6 +61,9 @@ async def load_artifacts_at_startup(app: FastAPI) -> AsyncGenerator:
     yield
     print(f'snooze...')
 
+def approximent_rent(rent: float):
+    return round(rent / 500) * 500
+
 # load_dotenv(find_dotenv())
 
 app = FastAPI(title='Chennai PG Intelligence', version='dev-1.0',lifespan=load_artifacts_at_startup)
@@ -69,6 +72,12 @@ app = FastAPI(title='Chennai PG Intelligence', version='dev-1.0',lifespan=load_a
 def health_check():
     return {'status': 'As you can see im not dead!?'}
 
+@app.get('/get-localities')
+def get_localities():
+    return {
+        'localities': app.state.locality_reference.index.to_list()
+    }
+    
 @app.post('/prediction', response_model=OutputSchema)
 async def predict(user_input: InputSchema):
 
@@ -112,9 +121,9 @@ async def predict(user_input: InputSchema):
     input_df = pd.DataFrame([input_dict])
 
     pred = model.predict(input_df)
-    predicted_rent = float(np.expm1(pred[0]))
-    lower = predicted_rent - test_metric
-    upper = predicted_rent + test_metric
+    predicted_rent = approximent_rent(float(np.expm1(pred[0])))
+    lower = approximent_rent(predicted_rent - test_metric)
+    upper = approximent_rent(predicted_rent + test_metric)
 
     print(f'Expected Rent For: {user_input.occupancy} sharing Hostel/PGs in {user_input.locality} is: {round(predicted_rent)}')
     print(f'Actual Rent in {user_input.locality} for {user_input.occupancy} sharing rooms typically ranges from {round(lower)} to {round(upper)}')
