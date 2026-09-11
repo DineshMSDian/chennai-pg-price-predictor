@@ -230,6 +230,37 @@ st.markdown("""
         margin-top: 0.4rem;
         text-shadow: 0 2px 6px rgba(20,5,30,0.5);
     }
+    /* ---------------- Footer ---------------- */
+    .vc-footer {
+        text-align: center;
+        margin-top: 6rem;
+        padding: 2.5rem 1rem 4rem;
+        color: #fff3e6;
+        font-family: 'Rajdhani', sans-serif;
+        text-shadow: 0 3px 12px rgba(30, 10, 45, 0.7);
+    }
+
+    .vc-footer-title {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        margin-bottom: 1rem;
+    }
+
+    .vc-footer-note {
+        font-size: 1.45rem;
+        font-style: italic;
+        font-weight: 600;
+        opacity: 0.92;
+        margin-bottom: 0.8rem;
+    }
+
+    .vc-footer-credit {
+        font-size: 1.1rem;
+        font-weight: 500;
+        opacity: 0.68;
+        letter-spacing: 1.2px;
+    }
 </style>
 
 <svg id="palm-overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -320,3 +351,7 @@ with st.container(border=True, horizontal_alignment='left'):
             )
         else:
             st.error("Prediction failed. Please try again.")
+
+st.markdown("""
+<div class="vc-footer"><div class="vc-footer-title">🎵 Theme inspired by GTA Vice City</div><div class="vc-footer-note">Because why not? I built a GTA themed UI before GTA 6 :)</div><div class="vc-footer-credit">Grand Theft Auto: Vice City © Rockstar Games</div></div>
+""", unsafe_allow_html=True)
