@@ -82,8 +82,8 @@ if __name__ == '__main__':
     used in predict script, under  "if __name__ == '__mian__'"
     """
     
-    from configs import DATA_PATH
-    from preprocess import load_and_clean
+    from src.configs import DATA_PATH
+    from src.preprocess import load_and_clean
     df = load_and_clean(DATA_PATH)
     print(df.shape)
     df = df[['locality', 'gender', 'occupancy', 'available_for', 'food_included', 'wifi', 'laundry', 'room_ac', 'parking']]
