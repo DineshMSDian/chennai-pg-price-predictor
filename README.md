@@ -1,314 +1,324 @@
 <div align="center">
 
-# 🌴 Chennai PG Intelligence
+# Chennai PG Intelligence
 
-### End-to-end ML system that scrapes, cleans, models, and serves PG/hostel rent predictions for Chennai
+**An end to end machine learning system that scrapes, cleans, models and serves PG rent predictions for Chennai.**
 
-*Went to Chennai for a job and got tired of guessing PG prices? This project fixes that.*
+Locality, sharing type and amenities go in. A fair monthly rent, with an honest price band, comes out.
 
-[![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![XGBoost](https://img.shields.io/badge/Model-XGBoost-2B6CB0?style=flat-square)](https://xgboost.readthedocs.io/)
-[![Optuna](https://img.shields.io/badge/Tuning-Optuna-1B6DC1?style=flat-square)](https://optuna.org/)
-[![MLflow](https://img.shields.io/badge/Tracking-MLflow-0194E2?style=flat-square&logo=mlflow&logoColor=white)](https://mlflow.org/)
-[![Docker](https://img.shields.io/badge/Containers-Docker-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Azure Container Apps](https://img.shields.io/badge/Deployed%20on-Azure%20Container%20Apps-0078D4?style=flat-square&logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/en-us/products/container-apps)
-[![uv](https://img.shields.io/badge/Package%20Manager-uv-DE5FE9?style=flat-square)](https://github.com/astral-sh/uv)
-[![Branches](https://img.shields.io/badge/branches-9-orange?style=flat-square&logo=git&logoColor=white)](https://github.com/DineshMSDian/chennai-pg-price-predictor/branches)
-[![Commits](https://img.shields.io/badge/commits-85%2B-informational?style=flat-square&logo=git&logoColor=white)](https://github.com/DineshMSDian/chennai-pg-price-predictor/commits/main)
+[![Python](https://img.shields.io/badge/Python-3.12+-1a1a1a?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![XGBoost](https://img.shields.io/badge/XGBoost-1a1a1a?style=flat-square)](https://xgboost.readthedocs.io/)
+[![Optuna](https://img.shields.io/badge/Optuna-1a1a1a?style=flat-square)](https://optuna.org/)
+[![MLflow](https://img.shields.io/badge/MLflow-1a1a1a?style=flat-square&logo=mlflow&logoColor=white)](https://mlflow.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-1a1a1a?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1a1a1a?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Docker](https://img.shields.io/badge/Docker-1a1a1a?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Azure](https://img.shields.io/badge/Azure_Container_Apps-1a1a1a?style=flat-square&logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/en-us/products/container-apps)
+[![uv](https://img.shields.io/badge/uv-1a1a1a?style=flat-square)](https://github.com/astral-sh/uv)
 
-### 🔗 [**Try the live app →**](https://chennai-pg-web.kindrock-91ecbb54.southindia.azurecontainerapps.io/)
+### [Open the live app](https://chennai-pg-web.kindrock-91ecbb54.southindia.azurecontainerapps.io/)
 
-*It's on a scale-to-zero Azure Container Apps plan, so the **first request can take ~2 minutes to cold-start** that's the container spinning back up, not a bug. Give it a minute and reload.*
+`85 commits` · `9 branches` · `1,600+ listings scraped` · `MAE ₹907` · `R² 0.655`
 
 </div>
 
----
-
-## 📖 Table of Contents
-
-- [Overview](#-overview)
-- [Live Demo](#-live-demo)
-- [Architecture](#-architecture)
-- [Branching Strategy 9 Branches, 85 Commits](#-branching-strategy--9-branches-85-commits)
-- [Repository Structure](#-repository-structure)
-- [How the Pipeline Works](#-how-the-pipeline-works)
-- [Deployment & Infrastructure](#-deployment--infrastructure)
-- [Model Performance](#-model-performance)
-- [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-- [API Reference](#-api-reference)
-- [Coverage: Localities Scraped](#-coverage-localities-scraped)
-- [Roadmap](#-roadmap)
-- [Author](#-author)
+> **First load takes about two minutes.** Both containers run on an Azure consumption plan that scales to zero when idle, so the first request after a quiet period has to boot the image back up. That is the cold start, not a crash. Wait it out or refresh once and the app comes up.
 
 ---
 
-## 🎯 Overview
+## Contents
 
-**Chennai PG Intelligence** predicts a fair monthly rent for a PG/hostel in Chennai based on locality, gender preference, sharing type (occupancy), and amenities (food, wifi, laundry, AC, parking). It's built as a **full MLOps loop, not a notebook**: scraped data → tracked experiments → a versioned model artifact → two independently containerized services → a live cloud deployment. 85 commits and 9 working branches went into getting it there.
-
-1. **Scrape** live PG listings from NoBroker across 8 Chennai micro-markets
-2. **Clean & engineer** features with a custom `scikit-learn` pipeline
-3. **Tune & train** an `XGBoost` regressor with `Optuna` (Bayesian search), tracked in `MLflow`
-4. **Serve** predictions through a `FastAPI` backend, packaged as its own Docker image
-5. **Present** them through a themed `Streamlit` web app (yes, it has a GTA Vice City skin 🌅), packaged as a *separate* Docker image
-6. **Ship** both containers to **Azure Container Apps**, running as independent, scalable services
-
-Given a locality + preferences, the system returns a predicted rent **and a realistic price band** (`lower`–`upper`) derived from the model's held-out test error, so it reads like "expect to pay ₹X, typically between ₹Y–₹Z" rather than a single overconfident number.
-
----
-
-## 🌐 Live Demo
-
-<div align="center">
-
-### 👉 **[chennai-pg-web.kindrock-91ecbb54.southindia.azurecontainerapps.io](https://chennai-pg-web.kindrock-91ecbb54.southindia.azurecontainerapps.io/)** 👈
-
-</div>
-
-- The Streamlit frontend and the FastAPI backend each run as **separate Docker containers on Azure Container Apps**, in South India region.
-- Both apps run on a **consumption plan that scales to zero** when idle great for cost, but it means the **first request after a period of inactivity takes ~2 minutes to cold-start** while the container image boots back up. Subsequent requests are fast.
-- If the UI looks unresponsive on first load, that's the cold start, not a crash — refresh after ~2 minutes.
+- [Why this exists](#why-this-exists)
+- [Architecture](#architecture)
+- [Repository layout](#repository-layout)
+- [How the pipeline works](#how-the-pipeline-works)
+- [Branching](#branching)
+- [Deployment](#deployment)
+- [Model performance](#model-performance)
+- [Running it locally](#running-it-locally)
+- [API reference](#api-reference)
+- [Localities covered](#localities-covered)
+- [Roadmap](#roadmap)
+- [Author](#author)
 
 ---
 
-## 🏗 Architecture
+## Why this exists
 
-```mermaid
-flowchart LR
-    subgraph Data["📥 Data Collection"]
-        A[NoBroker.in API] -->|Scraper/scraper.py| B[(Data/raw/dataset.csv)]
-    end
+A friend and I moved to Chennai to job hunt and spent weeks with no idea what a PG should actually cost. Every listing quotes a number and none of them tell you whether it is fair. Brokers know the going rate for a double sharing room in Velachery. Nobody arriving in the city does.
 
-    subgraph Prep["🧹 Preprocessing (src/preprocess.py)"]
-        B --> C[load_and_clean]
-        C --> D[train/val/test split<br/>stratified on occupancy]
-        D --> E[Custom Transformers:<br/>BasicFeatureTransformation<br/>LocalMedianImputation]
-        E --> F[ColumnTransformer:<br/>Ordinal · OHE · Target Encoding]
-    end
+There is no public dataset for this, so I built one. That constraint shaped the whole project: I reverse engineered NoBroker's internal API, collected the data myself, and spent close to two weeks cleaning it before touching a model. What came out the other end is a full loop rather than a notebook. Scraped data, tracked experiments, a versioned model artifact, two independently containerised services, and a live deployment.
 
-    subgraph Train["🎯 Training (src/train.py + optuna_tune.py)"]
-        F --> G[Optuna: 100-trial<br/>Bayesian search]
-        G --> H[Retrain XGBRegressor<br/>on train+val with best params]
-        H --> I[Evaluate on held-out test set]
-        I -->|MLflow tracking| J[(mlflow.db)]
-        I --> K[models/full_pipeline.pkl<br/>models/locality_reference.pkl<br/>models/metrics.json]
-    end
+The system returns a predicted rent along with a realistic band derived from the model's held out test error, so it reads as "expect around ₹X, typically ₹Y to ₹Z" instead of a single number pretending to more precision than the data supports.
 
-    subgraph Serve["🚀 Serving — two independent containers"]
-        K --> L[Docker image: api<br/>FastAPI · /prediction · /get-localities]
-        K --> M[Docker image: web<br/>Streamlit UI]
-    end
+---
 
-    subgraph Deploy["☁️ Azure Container Apps — South India"]
-        L --> N[api container app]
-        M --> O[web container app]
-        O -->|HTTPS| N
-    end
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  COLLECTION                                                                  │
+│                                                                              │
+│   NoBroker internal API                                                      │
+│   /api/v3/multi/property/PG/filter                                           │
+│            │                                                                 │
+│            │  Scraper/scraper.py  ·  8 geo-mapped areas × MALE / FEMALE       │
+│            │  paginate to total_count  ·  randomised 2-4s delays              │
+│            ▼                                                                 │
+│   Data/raw/chennai_pg_dataset.csv        one row per room type per PG         │
+└────────────┬─────────────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  PREPROCESSING          src/preprocess.py                                    │
+│                                                                              │
+│   load_and_clean ──▶ dedupe on (id, occupancy)                                │
+│                      drop leaky columns                                       │
+│                      rent clipped to ₹1,000-₹15,000                           │
+│                      deposit/rent ratio capped at 5x                          │
+│                      scores clipped to 0-10                                   │
+│         │                                                                     │
+│         ▼                                                                     │
+│   split 70 / 15 / 15, stratified on occupancy                                 │
+│         │                                                                     │
+│         ▼                                                                     │
+│   target transform:  y = log1p(rent)                                          │
+│         │                                                                     │
+│         ▼                                                                     │
+│   custom transformers                                                         │
+│     ├─ BasicFeatureTransformation    log1p(deposit), bools to int8            │
+│     └─ LocalMedianImputation         missing scores from the locality's own    │
+│                                      median, global median as fallback        │
+│         │                                                                     │
+│         ▼                                                                     │
+│   ColumnTransformer                                                           │
+│     ├─ numeric        passthrough                                             │
+│     ├─ boolean        passthrough                                             │
+│     ├─ occupancy      OrdinalEncoder   SINGLE < DOUBLE < THREE < FOUR         │
+│     ├─ gender         OneHotEncoder                                           │
+│     ├─ parking        OneHotEncoder                                           │
+│     ├─ available_for  OneHotEncoder                                           │
+│     └─ locality       TargetEncoder                                           │
+└────────────┬─────────────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  TRAINING               src/optuna_tune.py  +  src/train.py                  │
+│                                                                              │
+│   Optuna, 100 trials, TPE          ──┐                                        │
+│     n_estimators, learning_rate,     │  every trial a nested MLflow run       │
+│     max_depth, subsample,            ├────────────▶  mlflow.db                │
+│     colsample_bytree,                │             params · metrics · best    │
+│     reg_alpha, reg_lambda          ──┘                                        │
+│     objective: minimise MAE in ₹, not log space                               │
+│         │                                                                     │
+│         ▼                                                                     │
+│   retrain XGBRegressor on train + val (85%) with the best params              │
+│         │                                                                     │
+│         ▼                                                                     │
+│   evaluate once on the untouched 15% test split                               │
+│         │                                                                     │
+│         ▼                                                                     │
+│   models/  full_pipeline.pkl  ·  locality_reference.pkl  ·  metrics.json      │
+└────────────┬─────────────────────────────────────────────────────────────────┘
+             │
+             ├──────────────────────────────┬───────────────────────────────────┐
+             ▼                              ▼                                   │
+┌──────────────────────────┐   ┌──────────────────────────┐                     │
+│  DOCKER IMAGE: api       │   │  DOCKER IMAGE: web       │                     │
+│  FastAPI + uvicorn       │   │  Streamlit UI            │                     │
+│  pipeline loaded once    │   │  Vice City theme         │                     │
+│  at startup (lifespan)   │   │  collects preferences    │                     │
+│  GET  /                  │   │                          │                     │
+│  GET  /get-localities    │   │                          │                     │
+│  POST /prediction        │   │                          │                     │
+└────────────┬─────────────┘   └────────────┬─────────────┘                     │
+             │                              │                                   │
+             ▼                              ▼                                   │
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  AZURE CONTAINER APPS · South India · consumption plan, scales to zero        │
+│                                                                              │
+│     ┌────────────────┐           HTTPS            ┌────────────────┐          │
+│     │  web app       │ ─────────────────────────▶ │  api app       │          │
+│     │  public URL    │                            │  prediction    │          │
+│     └────────────────┘                            └────────────────┘          │
+│                                                                              │
+│  Two containers, not one. Each scales, redeploys and fails on its own.        │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🌳 Branching Strategy 9 Branches, 85 Commits
-
-This wasn't built on a single `main` branch `main` is kept **stable and untouched during active work**: every feature (EDA, preprocessing, modeling, backend, frontend, Docker/Azure) is developed on its own branch and **merged in via pull request** once it's working, which is where most of those 85 commits live.
-
-| Branch | Purpose |
-|---|---|
-| `main` | Stable, deployable state untouched directly; only updated via PR merges from other branches |
-| `preprocessing` | Data cleaning, feature engineering, the custom `scikit-learn` transformers |
-| `modeling` | XGBoost model iteration and evaluation |
-| `feature/EDA` | Exploratory data analysis on the scraped dataset |
-| `backend` | `FastAPI` service development (`api/`) merged via PR #4 |
-| `frontend/streamlit` | `Streamlit` UI development (`web/`), including the GTA Vice City theme merged via PR #5 |
-| `prod-pipeline` | Converts the exploratory notebook work (EDA/modeling) into clean, production-grade pipeline scripts the "notebook-to-script" refactor |
-| `deploy/docker-azure` | Dockerizing the API and web services, Azure Container Apps deployment |
-| `dev` | Integration branch for pulling feature work together ahead of `main` |
-
----
-
-## 📂 Repository Structure
+## Repository layout
 
 ```
 chennai-pg-price-predictor/
+│
 ├── Scraper/
-│   ├── config.py            # NoBroker API config, headers, base64-encoded area geo-params
-│   └── scraper.py           # Paginated scraper → parses PG JSON into flat rows → CSV/JSON
+│   ├── config.py               NoBroker endpoint, headers, base64 geo params per area
+│   └── scraper.py              paginated scrape, parse_listing() flattens JSON to rows
 │
 ├── src/
-│   ├── configs.py           # Central config: paths, column groups, model constants
-│   ├── preprocess.py        # Cleaning, splitting, custom transformers, ColumnTransformer
-│   ├── optuna_tune.py       # Optuna objective + MLflow-tracked hyperparameter search
-│   ├── train.py             # Full train orchestration (tune → retrain → eval → save)
-│   └── predict.py           # Loads saved pipeline, runs single-record predictions (+ CLI demo)
+│   ├── configs.py              paths, column groups, model constants, one place
+│   ├── preprocess.py           cleaning, splitting, custom transformers, ColumnTransformer
+│   ├── optuna_tune.py          Optuna objective wired into MLflow nested runs
+│   ├── train.py                tune, retrain, evaluate, persist artifacts
+│   └── predict.py              loads the saved pipeline, single record inference
 │
 ├── api/
-│   └── main.py               # FastAPI service health check, localities, prediction
+│   └── main.py                 FastAPI service, health check, localities, prediction
 │
 ├── web/
-│   └── app.py                 # Streamlit UI (GTA Vice City–themed) that calls the API
+│   └── app.py                  Streamlit frontend, responsive, calls the API
 │
 ├── models/
-│   ├── full_pipeline.pkl      # preprocessor + trained XGBRegressor (joblib)
-│   ├── locality_reference.pkl # per-locality median/mode feature lookup table
-│   └── metrics.json           # test_mae / test_rmse / test_r2
+│   ├── full_pipeline.pkl       preprocessor and trained XGBRegressor as one sklearn Pipeline
+│   ├── locality_reference.pkl  per locality median and mode lookup for backfilling features
+│   └── metrics.json            test_mae, test_rmse, test_r2
 │
-├── Data/raw/                   # Scraped, gitignored raw dataset (created at runtime)
-├── .gitignore
-├── .python-version
-├── pyproject.toml / uv.lock    # Dependency management (uv)
-└── main.py                     # Placeholder entrypoint
+├── Data/raw/                   scraped dataset, gitignored, created at runtime
+├── pyproject.toml / uv.lock    dependencies, split into api / web / dev groups
+└── .python-version
 ```
 
 ---
 
-## 🔄 How the Pipeline Works
+## How the pipeline works
 
-### 1️⃣ Scraping — `Scraper/scraper.py`
-- Hits NoBroker's internal `/api/v3/multi/property/PG/filter` endpoint for **8 pre-mapped Chennai areas** (base64-encoded lat/lon + place IDs in `Scraper/config.py`), across **`MALE`/`FEMALE`** listings.
-- Paginates until the fetched count matches the API's reported `total_count`, with randomized sleep intervals (2–4s between pages, 1–2s between area/gender switches) to stay polite.
-- `parse_listing()` flattens each property into **one row per room type** (so a PG offering SINGLE, DOUBLE, and TRIPLE sharing produces 3 rows), extracting identity, amenities, room, food, and rule fields.
-- Outputs both `chennai_pg_dataset.csv` and `.json` to `Data/raw/`.
+### Scraping
 
-### 2️⃣ Preprocessing — `src/preprocess.py`
-- **Cleaning:** drops duplicates (`id` + `occupancy`), drops leaky/low-value columns, filters `rent` to a sane `₹1,000–₹15,000` band, caps deposit-to-rent ratio at 5×, clips `transit_score`/`lifestyle_score` to `0–10`.
-- **Split:** 70% train / 15% val / 15% test, stratified on `occupancy`.
-- **Target transform:** `log1p(rent)` — the model learns on log-rent, predictions are inverted with `expm1` at inference.
-- **Custom transformers:**
-  - `BasicFeatureTransformation` — log1p on `deposit`, casts booleans to int8.
-  - `LocalMedianImputation` — fills missing `transit_score`/`lifestyle_score` with the **locality's own median**, falling back to the global median.
-- **`ColumnTransformer`:** numeric passthrough, boolean passthrough, `OrdinalEncoder` for `occupancy` (SINGLE→FOUR ordering preserved), `OneHotEncoder` for `gender`/`parking`/`available_for`, and `TargetEncoder` for `locality`.
+`Scraper/scraper.py` hits NoBroker's internal PG filter endpoint for eight pre-mapped Chennai micro markets. The area geo parameters are base64 encoded lat/lon and place IDs, kept in `Scraper/config.py`, and each area is queried for both `MALE` and `FEMALE` listings.
 
-### 3️⃣ Tuning & Training — `src/optuna_tune.py` + `src/train.py`
-- **Optuna** runs a 100-trial Bayesian search over `n_estimators`, `learning_rate`, `max_depth`, `subsample`, `colsample_bytree`, `reg_alpha`, `reg_lambda` — minimizing actual (inverse-transformed) MAE on the validation set.
-- Every trial is logged as a **nested MLflow run**; the best params and best MAE are logged on the parent run.
-- The final model is **retrained on train+val combined** (85% of data) using the best hyperparameters, then evaluated once on the untouched 15% test set for an honest performance estimate.
-- `save_artifacts()` persists:
-  - `full_pipeline.pkl` — preprocessor + model as a single `sklearn.Pipeline`
-  - `locality_reference.pkl` — per-locality median (numeric) and mode (binary amenities) lookup, used to auto-fill fields the API user doesn't provide
-  - `metrics.json` — final test MAE/RMSE/R²
+The scraper paginates until the fetched count matches the API's reported `total_count`, with randomised sleeps of two to four seconds between pages and one to two seconds between area and gender switches. `parse_listing()` flattens each property into one row per room type, so a PG offering single, double and triple sharing produces three rows, each with its own rent. Identity, amenities, room, food and house rule fields are pulled out into flat columns.
 
-### 4️⃣ Serving — `api/main.py`
-FastAPI app that loads the pipeline **once at startup** (lifespan handler), exposes locality lookups, and turns a user's high-level inputs into the full feature vector the model expects (backfilling `latitude`, `longitude`, `deposit`, and amenity fields from the locality reference table). Predicted rent is rounded to the nearest ₹500, with a ± MAE band.
+### Preprocessing
 
-### 5️⃣ Frontend — `web/app.py`
-A Streamlit app with a custom CSS/SVG "Vice City sunset + palm silhouettes" theme. Collects locality, gender, occupancy, purpose, food/wifi/laundry/AC preferences, and parking type, posts to the API, and renders the predicted rent with its expected range.
+Duplicates are dropped on the `id` and `occupancy` pair. Leaky and low signal columns go. Rent is filtered to a sane ₹1,000 to ₹15,000 band, the deposit to rent ratio is capped at five times, and `transit_score` and `lifestyle_score` are clipped to zero through ten.
 
-### 6️⃣ Containerize & Deploy — `deploy/docker-azure`
-- The **API** (`api/`) and the **web app** (`web/`) are packaged into **two separate Docker images**, so each service scales, redeploys, and fails independently the frontend going down doesn't take the model-serving API with it, and vice versa.
-- Both images are deployed as **Azure Container Apps**, communicating over HTTPS (`web` → `api`) instead of running on localhost, which is what `API_URL` in the web app's `.env` points at in production.
+The split is 70 / 15 / 15, stratified on occupancy so every sharing type is represented in all three sets. The target is `log1p(rent)`, which means the model trains on log rent and predictions are inverted with `expm1` at inference. Rent distributions are right skewed and this keeps the errors symmetric in the space that matters.
+
+Two custom transformers do the work scikit-learn does not have off the shelf. `BasicFeatureTransformation` applies `log1p` to deposit and casts booleans to `int8`. `LocalMedianImputation` fills missing transit and lifestyle scores with the median for that specific locality rather than a global median, because a missing transit score in Sholinganallur means something different from one in Guindy. The global median is the fallback when a locality has nothing to impute from.
+
+Both fit only on the training split, so the imputation medians never see validation or test data.
+
+### Tuning and training
+
+Optuna runs a hundred trial Bayesian search over `n_estimators`, `learning_rate`, `max_depth`, `subsample`, `colsample_bytree`, `reg_alpha` and `reg_lambda`. The objective minimises MAE in rupees on the validation set after inverse transforming, not MAE in log space, because an optimiser told to minimise log error will happily trade away accuracy on expensive listings.
+
+Every trial is logged as a nested MLflow run, with the best parameters and best MAE on the parent run. The final model is retrained on train and validation combined, eighty five percent of the data, then evaluated exactly once against the untouched test split.
+
+`save_artifacts()` writes the full pipeline, the locality reference table, and the metrics file.
+
+### Serving
+
+`api/main.py` loads the pipeline once at startup through a lifespan handler rather than per request. It takes the handful of high level inputs a user can reasonably supply and expands them into the full feature vector the model expects, backfilling latitude, longitude, deposit and unspecified amenities from the locality reference table. Predicted rent is rounded to the nearest ₹500 and returned with a band of plus or minus the test MAE.
+
+`web/app.py` is a Streamlit frontend with a GTA Vice City themed CSS and SVG layer, responsive down to phone widths, that posts preferences to the API and renders the result.
 
 ---
 
-## ☁️ Deployment & Infrastructure
+## Branching
+
+`main` stays stable and deployable. Every piece of work happens on its own branch and merges through a pull request once it runs, which is where most of the 85 commits live.
+
+| Branch | Purpose |
+|---|---|
+| `main` | Stable, deployable, only updated through PR merges |
+| `feature/EDA` | Exploratory analysis on the scraped dataset |
+| `preprocessing` | Cleaning, feature engineering, the custom transformers |
+| `modeling` | XGBoost iteration and evaluation |
+| `prod-pipeline` | The notebook to script refactor, exploratory work turned into production modules |
+| `backend` | FastAPI service, merged via PR #4 |
+| `frontend/streamlit` | Streamlit UI and the Vice City theme, merged via PR #5 |
+| `deploy/docker-azure` | Dockerfiles and Azure Container Apps deployment |
+| `dev` | Integration branch ahead of `main` |
+
+---
+
+## Deployment
 
 | Component | Where it runs | Notes |
 |---|---|---|
-| **`api` container** | Azure Container Apps (South India) | FastAPI + the trained pipeline, loaded once at startup |
-| **`web` container** | Azure Container Apps (South India) | Streamlit UI, talks to the `api` container over HTTPS |
-| **Scaling** | Consumption plan, scale-to-zero | Cheap to run idle, but the **first hit after idling takes ~2 minutes** to cold-start the container |
-| **Build source** | `deploy/docker-azure` branch | Dockerfiles + deployment config live here, PR-merged into `main` once working |
+| `api` container | Azure Container Apps, South India | FastAPI and the trained pipeline, loaded once at startup |
+| `web` container | Azure Container Apps, South India | Streamlit UI, talks to the API over HTTPS |
+| Scaling | Consumption plan, scales to zero | Cheap when idle, roughly two minute cold start on the first hit |
+| Build source | `deploy/docker-azure` | Dockerfiles and deployment config, PR merged into `main` |
 
-**Why two containers instead of one?** It mirrors how you'd actually run this in production a stateless prediction API that other clients (not just this Streamlit app) could call, and a UI that's disposable and redeployable on its own. It also means the API can be pinged directly for testing without spinning up the frontend.
+The API and the frontend are two separate images on purpose. It mirrors how this would actually be run: a stateless prediction service that any client could call, and a disposable UI that can be redeployed without touching the model. It also means the API can be tested directly without starting the frontend.
 
 ---
 
-## 📊 Model Performance
+## Model performance
 
-Current production model (`models/metrics.json`), evaluated on the held-out test split, in **original ₹ terms** (inverse-transformed from log-space):
+Evaluated on the held out test split, in rupees, inverse transformed from log space.
 
-| Metric | Value | What it means |
+| Metric | Value | Reading |
 |---|---|---|
-| **MAE** | ₹907.11 | On average, predictions are off by ~₹900 |
-| **RMSE** | ₹1,375.81 | Penalizes larger misses more heavily |
-| **R²** | 0.655 | Model explains ~65.5% of rent variance |
+| MAE | ₹907.11 | Typical prediction is off by about ₹900 |
+| RMSE | ₹1,375.81 | Larger misses weighted more heavily |
+| R² | 0.655 | Explains roughly 65% of rent variance |
 
-> The API surfaces this uncertainty directly — every prediction comes with a `lower`/`upper` band (predicted rent ± test MAE) instead of a false-precision point estimate.
+An R² of 0.655 is the honest ceiling for this feature set. Rent in Chennai depends on things the listing never states, such as the actual state of the building, how far the walk to the bus stop really is, and what the owner thinks they can get. The band the API returns is there because of exactly that.
 
----
-
-## 🧰 Tech Stack
-
-| Layer | Tools |
-|---|---|
-| **Scraping** | `requests`, NoBroker internal API |
-| **Data / Features** | `pandas`, `numpy`, custom `scikit-learn` transformers |
-| **Modeling** | `XGBoost` (`XGBRegressor`), `scikit-learn` `ColumnTransformer`/`Pipeline` |
-| **Hyperparameter Search** | `Optuna` (TPE/Bayesian, 100 trials) |
-| **Experiment Tracking** | `MLflow` (nested runs, params, metrics) |
-| **Serving** | `FastAPI`, `uvicorn`, `pydantic` schemas |
-| **Frontend** | `Streamlit` (custom themed UI) |
-| **Persistence** | `joblib` (pipeline + reference table), `json` (metrics) |
-| **Containerization** | `Docker` — separate images for `api` and `web` |
-| **Cloud Deployment** | `Azure Container Apps` (South India region, scale-to-zero) |
-| **Version Control** | `git` — 9 active branches, 85 commits across scraping → EDA → preprocessing → modeling → backend → frontend → pipeline → Docker/Azure deploy |
-| **Tooling** | `uv` for dependency/venv management, Python `3.12+` |
+XGBoost was picked after benchmarking against linear regression and other tree ensembles, not by default.
 
 ---
 
-## 🚀 Getting Started
+## Running it locally
 
-### Prerequisites
-- Python **3.12+**
-- [`uv`](https://github.com/astral-sh/uv) installed
+**Requires** Python 3.12 or newer and [`uv`](https://github.com/astral-sh/uv).
 
-### 1. Clone & install
 ```bash
 git clone https://github.com/DineshMSDian/chennai-pg-price-predictor.git
 cd chennai-pg-price-predictor
 uv sync
 ```
 
-### 2. (Optional) Scrape fresh data
+Scrape fresh data, optional, needs a `USER_ID` in a `.env`:
+
 ```bash
 cd Scraper
-# requires a USER_ID env var (NoBroker session/user identifier) in a .env file
 uv run scraper.py
 ```
 
-### 3. Train the model
-```bash
-# Start MLflow tracking server (train.py expects http://localhost:5000)
-uv run mlflow ui --port 5000 &
+Train. `train.py` expects an MLflow server on port 5000:
 
+```bash
+uv run mlflow ui --port 5000 &
 uv run -m src.train
 ```
-This runs the full Optuna search → retrain → evaluate → save-artifacts cycle and writes `models/full_pipeline.pkl`, `models/locality_reference.pkl`, and `models/metrics.json`.
 
-### 4. Run the API
-```bash
-uv run fastapi run api/main.py
-```
+That runs the search, retrains, evaluates and writes `models/full_pipeline.pkl`, `models/locality_reference.pkl` and `models/metrics.json`.
 
-### 5. Run the web app
+Serve:
+
 ```bash
-# .env should define API_URL, e.g. API_URL=http://localhost:8000
-uv run streamlit run web/app.py
+uv run fastapi run api/main.py                  # API on :8000
+API_URL=http://localhost:8000 uv run streamlit run web/app.py
 ```
 
 ---
 
-## 📡 API Reference
+## API reference
 
-**Base URL:** `http://localhost:8000` (default)
+Base URL `http://localhost:8000`.
 
-### `GET /`
-Health check.
+**`GET /`** health check.
+
 ```json
 { "status": "As you can see im not dead!?" }
 ```
 
-### `GET /get-localities`
-Returns every locality the model was trained on (used to populate the UI dropdown).
+**`GET /get-localities`** every locality the model was trained on, used to populate the dropdown.
+
 ```json
-{ "localities": ["Adambakkam", "Alandur", "...": "..."] }
+{ "localities": ["Adambakkam", "Alandur", "..."] }
 ```
 
-### `POST /prediction`
+**`POST /prediction`**
+
 <details>
-<summary><strong>Request body</strong></summary>
+<summary>Request</summary>
 
 ```json
 {
@@ -326,7 +336,7 @@ Returns every locality the model was trained on (used to populate the UI dropdow
 </details>
 
 <details>
-<summary><strong>Response</strong></summary>
+<summary>Response</summary>
 
 ```json
 {
@@ -341,42 +351,41 @@ Returns every locality the model was trained on (used to populate the UI dropdow
 
 ---
 
-## 🗺 Coverage: Localities Scraped
+## Localities covered
 
-The scraper currently targets **8 geo-mapped Chennai micro-markets**:
+Eight geo-mapped micro markets, chosen because they are where people actually look for a PG when they move to Chennai for work or college.
 
-| Region | Localities Covered |
+| Region | Localities |
 |---|---|
-| 🏙️ South Chennai | Perungalathur, Old/New Perungalathur, Vandalur |
-| 🚉 Suburban South | East Tambaram, Tambaram West, GST Road–Tambaram |
-| 💻 IT Corridor (OMR) | Sholinganallur, OMR–Karapakkam |
-| 🏢 IT Corridor (ECR) | Tharamani, Maraimalai Nagar, ECR–Thiruvanmiyur |
-| 🎓 Central-South | Velachery, Adambakkam, IIT Madras |
-| 🌊 Coastal | Thiruvanmiyur, Kamaraj Nagar, Kottivakkam |
-| 🏛️ Central | Guindy, Saidapet, Alandur |
-| 🛍️ West-Central | Vadapalani, Ashok Nagar, Kodambakkam |
+| South Chennai | Perungalathur, Old and New Perungalathur, Vandalur |
+| Suburban south | East Tambaram, Tambaram West, GST Road Tambaram |
+| IT corridor, OMR | Sholinganallur, OMR Karapakkam |
+| IT corridor, ECR | Tharamani, Maraimalai Nagar, ECR Thiruvanmiyur |
+| Central south | Velachery, Adambakkam, IIT Madras |
+| Coastal | Thiruvanmiyur, Kamaraj Nagar, Kottivakkam |
+| Central | Guindy, Saidapet, Alandur |
+| West central | Vadapalani, Ashok Nagar, Kodambakkam |
 
 ---
 
-## 🛣 Roadmap
+## Roadmap
 
-- [x] Containerize API and web app as separate Docker images
-- [x] Deploy to a managed cloud platform (Azure Container Apps)
-- [ ] CI/CD (GitHub Actions) to auto-build/push containers on merge to `main`
-- [ ] Move off scale-to-zero (or add a warm-up ping) to kill the ~2-min cold start
-- [ ] Model versioning via MLflow Model Registry
-- [ ] Add more geo-mapped Chennai localities (OMR further south, Porur, Perambur)
-- [ ] Swap in `transit_score`/`lifestyle_score` from a real API instead of local-median imputation
-- [ ] Confidence intervals via quantile regression instead of a static MAE band
+- [x] Separate Docker images for API and web
+- [x] Deploy to Azure Container Apps
+- [x] Responsive frontend, mobile and desktop
+- [ ] GitHub Actions to build and push containers on merge to `main`
+- [ ] Warm-up ping or a minimum replica to kill the cold start
+- [ ] Model versioning through the MLflow Model Registry
+- [ ] More localities: further south on OMR, Porur, Perambur
+- [ ] Real transit and lifestyle scores from an API instead of local median imputation
+- [ ] Quantile regression for the prediction band instead of a static MAE offset
 
 ---
 
-## 👤 Author
+## Author
 
-**Dinesh**
-[GitHub](https://github.com/DineshMSDian) · [Email](mailto:dinesh2742004@gmail.com) · [This repo](https://github.com/DineshMSDian/chennai-pg-price-predictor) · [Live app](https://chennai-pg-web.kindrock-91ecbb54.southindia.azurecontainerapps.io/)
+**Dinesh T** · AI and ML engineer, Chennai
 
-🎨 *Theme inspired by GTA Vice City — because why not build a Vice City–themed UI before GTA 6 ships.*
-<sub>Grand Theft Auto: Vice City © Rockstar Games</sub>
+[GitHub](https://github.com/DineshMSDian) · [LinkedIn](https://linkedin.com/in/dinesht7013) · [Email](mailto:dinesh2742004@gmail.com) · [Live app](https://chennai-pg-web.kindrock-91ecbb54.southindia.azurecontainerapps.io/)
 
-</div>
+<sub>The UI theme is a nod to GTA Vice City. Grand Theft Auto: Vice City © Rockstar Games.</sub>
