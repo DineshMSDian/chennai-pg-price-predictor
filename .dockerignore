@@ -1,0 +1,13 @@
+.venv/
+venv/
+.env
+.git/
+.github/
+.idea/
+.vscode/
+
+TEMP/
+
+__pycache__
+*.pyc
+mlflow.db

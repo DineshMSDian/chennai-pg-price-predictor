@@ -64,8 +64,6 @@ async def load_artifacts_at_startup(app: FastAPI) -> AsyncGenerator:
 def approximent_rent(rent: float):
     return round(rent / 500) * 500
 
-# load_dotenv(find_dotenv())
-
 app = FastAPI(title='Chennai PG Intelligence', version='dev-1.0',lifespan=load_artifacts_at_startup)
 
 @app.get('/')

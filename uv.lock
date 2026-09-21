@@ -421,42 +421,60 @@ name = "chennai-pg"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "catboost" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "python-dotenv" },
+]
+
+[package.dev-dependencies]
+api = [
     { name = "fastapi", extra = ["standard"] },
+    { name = "joblib" },
+    { name = "pyarrow" },
+    { name = "pydantic" },
+    { name = "scikit-learn" },
+    { name = "xgboost" },
+]
+dev = [
+    { name = "catboost" },
     { name = "lightgbm" },
     { name = "matplotlib" },
     { name = "mlflow" },
-    { name = "numpy" },
     { name = "optuna" },
-    { name = "pandas" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "requests" },
-    { name = "scikit-learn" },
     { name = "seaborn" },
+]
+web = [
+    { name = "requests" },
     { name = "streamlit" },
-    { name = "uvicorn" },
-    { name = "xgboost" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "catboost", specifier = ">=1.2.10" },
+    { name = "numpy", specifier = ">=2.5.1" },
+    { name = "pandas", specifier = ">=3.0.3" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
+]
+
+[package.metadata.requires-dev]
+api = [
     { name = "fastapi", extras = ["standard"], specifier = ">=0.141.1" },
+    { name = "joblib" },
+    { name = "pyarrow", specifier = ">=25.0.1" },
+    { name = "pydantic", specifier = ">=2.13.5" },
+    { name = "scikit-learn", specifier = ">=1.9.0" },
+    { name = "xgboost", specifier = ">=3.4.1" },
+]
+dev = [
+    { name = "catboost", specifier = ">=1.2.10" },
     { name = "lightgbm", specifier = ">=4.7.0" },
     { name = "matplotlib", specifier = ">=3.11.0" },
     { name = "mlflow", specifier = ">=3.16.0" },
-    { name = "numpy", specifier = ">=2.5.1" },
     { name = "optuna", specifier = ">=5.0.0" },
-    { name = "pandas", specifier = ">=3.0.3" },
-    { name = "pydantic", specifier = ">=2.13.5" },
-    { name = "python-dotenv", specifier = ">=1.2.2" },
-    { name = "requests", specifier = ">=2.34.2" },
-    { name = "scikit-learn", specifier = ">=1.9.0" },
     { name = "seaborn", specifier = ">=0.13.2" },
+]
+web = [
+    { name = "requests", specifier = ">=2.34.2" },
     { name = "streamlit", specifier = ">=1.63.0" },
-    { name = "uvicorn", specifier = ">=0.52.4" },
-    { name = "xgboost", specifier = ">=3.4.1" },
 ]
 
 [[package]]
