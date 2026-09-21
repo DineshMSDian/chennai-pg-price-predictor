@@ -475,9 +475,9 @@ st.markdown("""
 st.markdown("""
 <div class="vc-notice">
     <b>First visit? Give it a minute.</b> This demo runs on a scale-to-zero container,
-    so it sleeps when nobody is using it and the very first request has to wake it up —
-    that can take up to ~2 minutes. If the page looks stuck or throws an error while it is
-    still waking, just refresh once and it will come right up. Everything after that is instant.
+    so it sleeps when nobody is using it and the very first request has to wake it up
+    that can take up to ~2 minutes. <b>If the page looks stuck or throws an error while it is
+    still waking, just refresh once and it will come right up.</b> Everything after that is instant.
 </div>
 """, unsafe_allow_html=True)
 
