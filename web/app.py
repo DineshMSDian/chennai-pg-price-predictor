@@ -33,7 +33,7 @@ def fetch_localities():
             return sorted(response.json()['localities'])
         except Exception as exc:  # noqa: BLE001 - surfaced to the user below
             last_error = exc
-    raise last_error if last_error is not None else RuntimeError('Unable to fetch localities')
+    raise last_error
 
 
 st.set_page_config(
@@ -43,9 +43,11 @@ st.set_page_config(
     initial_sidebar_state='collapsed',
 )
 
+# ---------------------------------------------------------------------------
 # Visual layer only — no changes to app logic below this point.
 # Desktop styling is unchanged; everything mobile lives in the media queries
 # at the bottom of this <style> block.
+# ---------------------------------------------------------------------------
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Bungee&family=Teko:wght@500;600&family=Rajdhani:wght@500;600;700&display=swap');
@@ -338,17 +340,22 @@ st.markdown("""
         }
 
         .block-container {
-            padding-top: 0.5rem !important;
+            /* Streamlit's own mobile toolbar is a fixed-position header, not
+               part of normal document flow. Content needs enough top
+               clearance to sit below it, or the first thing on the page
+               (the contact bar) renders hidden underneath it. */
+            padding-top: calc(3.6rem + env(safe-area-inset-top, 0px)) !important;
             padding-left: 0.85rem !important;
             padding-right: 0.85rem !important;
         }
 
         /* Contact links move into normal flow so they can't overlap the hero */
         .vc-contact {
-            position: static;
+            position: relative;
+            z-index: 5;
             justify-content: center;
             gap: 1.6rem;
-            margin: 0.6rem 0 0.2rem 0;
+            margin: 0.4rem 0 0.2rem 0;
         }
         .vc-contact a { font-size: 0.95rem; }
 
@@ -468,13 +475,13 @@ st.markdown("""
 st.markdown("""
 <div class="vc-notice">
     <b>First visit? Give it a minute.</b> This demo runs on a scale-to-zero container,
-    so it sleeps when nobody is using it and the very first request has to wake it up
-    that can take up to ~2 minutes. <b>If the page looks stuck or throws an error while it is
-    still waking, just refresh once and it will come right up.</b> Everything after that is instant.
+    so it sleeps when nobody is using it and the very first request has to wake it up —
+    that can take up to ~2 minutes. If the page looks stuck or throws an error while it is
+    still waking, just refresh once and it will come right up. Everything after that is instant.
 </div>
 """, unsafe_allow_html=True)
 
-# --- Wake the API up (this is where a cold start is actually felt) 
+# --- Wake the API up (this is where a cold start is actually felt) -----------
 try:
     with st.spinner('Waking the server up — first load after a while can take up to 2 minutes. Thanks for your patience!'):
         localities = fetch_localities()
